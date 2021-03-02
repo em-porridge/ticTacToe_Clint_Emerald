@@ -1,0 +1,19 @@
+Clint Fernandes
+Emerald Kains
+
+Usage: python client.py <host> <port>
+
+<host> is the IP address of the server
+<port> is the port number for the server
+
+For convenience, <host> and <port> may be hard-coded into the script to prevent the need to use command line arguments:
+- add the IP to the hosts dictionary
+- specify which host to use in HOST
+- specify which port to use in PORT
+- provide a True to the call to get_connection_args
+
+Known strange behaviour:
+- the game board sometimes does not output on the command line (Ubuntu Linux 20.04).
+- the game board consistently outputs as expected in the PyCharm IDE
+
+N.B. This script requires python >= 3.8
