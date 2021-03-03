@@ -116,7 +116,7 @@ static int validate_input(Environment *env){
         if(check_win(env)){
             return GAMEOVER;
         }
-        game_env->response_type = ACCEPTED;
+//        game_env->response_type = ACCEPTED;
         print_board(env);
     } else {
         uint8_t game_id = 0;
@@ -163,7 +163,11 @@ static int accepted_move(Environment *env){
 static bool check_board(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *) env;
+
+    game_env->received_position = (int) game_env->byte_input - OFFSET;
+
     if(game_env->game_board[game_env->received_position] == BLANK_SPACE){
+        printf("update board\n");
         game_env->game_board[game_env->received_position] = game_env->current_player;
         game_env->response_type = ACCEPTED;
         return true;
