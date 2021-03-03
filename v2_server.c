@@ -83,13 +83,22 @@ int main() {
                     }
                 } else {
                     cfd = i;
-                    num_read = read(cfd, buf, sizeof(buf));
+                    uint8_t position;
+                    uint8_t game;
+//                    num_read = read(cfd, buf, sizeof(buf));
+                    num_read = read(cfd, &game, 1);
+                    read(cfd, &gameCollection[0].game_env.byte_input, sizeof (gameCollection[0].game_env.byte_input));
+                    printf("READ GAME ID : %u, %d \n ENTERING FSM.... \n", game, gameCollection[0].game_env.byte_input);
+
                     if (num_read < 1) {
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
                     }
-                    write(STDOUT_FILENO, buf, num_read);
-
+//                    write(STDOUT_FILENO, &game, num_read);
+                    // update game env
+//                    gameCollection[0].game_env.byte_input = position;
+                    GameEnvironment check = gameCollection[0].game_env;
+                    mainaroo(&check);
                 }
             }
         }
@@ -147,14 +156,12 @@ static void create_new_game(GameLobby *lobby, GameEnvironment *new_env){
 
 //
 //    send(new_env->fd_client_O, &lobby->game_id, sizeof (lobby->game_id), 0);
-    // not safe
     send(new_env->fd_client_X, &welcome, sizeof (welcome), 0);
-    send(new_env->fd_client_X, &lobby->game_id, sizeof (lobby->game_id), 0);
     send(new_env->fd_client_X, &assign_x, sizeof (assign_x), 0);
+    send(new_env->fd_client_X, &lobby->game_id, sizeof (lobby->game_id), 0);
     send(new_env->fd_client_O, &welcome, sizeof (welcome), 0);
-    send(new_env->fd_client_O, &lobby->game_id, sizeof (lobby->game_id), 0);
     send(new_env->fd_client_O, &assign_o, sizeof (assign_o), 0);
-
+    send(new_env->fd_client_O, &lobby->game_id, sizeof (lobby->game_id), 0);
 //    send(new_env->fd_client_X, &invite, sizeof(invite), 0 );
 
 ////

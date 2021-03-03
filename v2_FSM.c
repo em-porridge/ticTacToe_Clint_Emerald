@@ -71,7 +71,7 @@ typedef struct
 
 int mainaroo(GameEnvironment *env)
 {
-//    GameEnvironment env;
+
     StateTransition transitions[] =
             {
                     {FSM_INIT, VALIDATE, &validate_input},
@@ -93,8 +93,8 @@ int mainaroo(GameEnvironment *env)
     start_state = FSM_INIT;
     end_state   = VALIDATE;
     printf("STARTING FSM \n CURRENT PLAYER : %d", env->fd_current_player);
-
-    code = fsm_run((Environment *)&env, &start_state, &end_state, transitions);
+    printf("\n AND BYTE IS: %u , %d \n", env->byte_input, env->byte_input);
+    code = fsm_run((Environment *)env, &start_state, &end_state, transitions);
 
     if(code != 0)
     {
@@ -109,8 +109,9 @@ static int validate_input(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
 
+    printf("\n ONE BYTE FSM : %d %u\n", game_env->byte_input, game_env->byte_input);
     // change name of one_byte, i hate it
-    if(game_env->one_byte > LOWER_0 && game_env->one_byte < UPPER_8) {
+    if(game_env->byte_input > LOWER_0 && game_env->byte_input < UPPER_8) {
         check_board(env);
         if(check_win(env)){
             return GAMEOVER;
@@ -118,9 +119,12 @@ static int validate_input(Environment *env){
         game_env->response_type = ACCEPTED;
         print_board(env);
     } else {
-        // change response type
+        uint8_t game_id = 0;
         game_env->response_type = INVALID;
+
         send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
+        send(game_env->fd_current_player, &game_id, sizeof (game_id), 0);
+
         printf("not approved\n");
         return WAIT;
     }
@@ -138,12 +142,14 @@ static int invalid_move(Environment *env){
 static int accepted_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
-
+    uint8_t game_id = 0;
     send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
 
     switch_players(env);
 
     uint8_t invitation = INVITE;
+
+    send(game_env->fd_current_player, &game_id, sizeof (game_id), 0);
     send(game_env->fd_current_player, &invitation, sizeof (invitation), 0);
 
     for (int i = 0; i < 9; i++) {
