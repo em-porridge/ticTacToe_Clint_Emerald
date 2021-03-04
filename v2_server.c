@@ -46,7 +46,7 @@ int main() {
 
     SingleGame gameCollection[10];
     GameLobby lobby;
-    game_id = 2;
+    game_id = 0;
     lobby.x_fd = 0;
     lobby.new_game = true;
 
@@ -70,7 +70,7 @@ int main() {
         for (int i = 0; i < FD_SETSIZE; i++) {
             if (FD_ISSET((u_int) i, &ready_sockets)) {
                 if (i == sfd) {
-                    cfd = accept4(sfd, NULL, NULL, SOCK_NONBLOCK);
+                    cfd = accept(sfd, NULL, NULL);
                     FD_SET((u_int) cfd, &rfds);
                     // if there is not x in the queue then new connect is player x
                     if (lobby.x_fd == 0 && lobby.new_game == true) {
