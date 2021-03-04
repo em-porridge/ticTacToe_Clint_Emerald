@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
 project(A01_Clint_Emerald C)
-
 set(CMAKE_C_STANDARD 99)
 
 cmake_minimum_required(VERSION 3.15)

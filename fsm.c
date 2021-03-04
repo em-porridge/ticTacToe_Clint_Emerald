@@ -52,7 +52,7 @@ int fsm_run(Environment *env, int *from_state_id, int *to_state_id, const StateT
 
     *from_state_id = from_id;
     *to_state_id   = to_id;
-
+    printf("ending turn....\n");
     return 0;
 }
 

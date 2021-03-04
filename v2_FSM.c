@@ -49,6 +49,7 @@ typedef struct
     Environment common;
     // keep track of current player
     int current_player;
+    int game_ID;
     // game ID ???
 
     // file descriptors
@@ -92,8 +93,8 @@ int mainaroo(GameEnvironment *env)
 
     start_state = FSM_INIT;
     end_state   = VALIDATE;
-    printf("STARTING FSM \n CURRENT PLAYER : %d", env->fd_current_player);
-    printf("\n AND BYTE IS: %u , %d \n", env->byte_input, env->byte_input);
+    printf("STARTING FSM \n CURRENT PLAYER: %d", env->fd_current_player);
+    printf("\n RECEIVED FROM PLAYER: %u\n", env->byte_input);
     code = fsm_run((Environment *)env, &start_state, &end_state, transitions);
 
     if(code != 0)
@@ -108,8 +109,6 @@ int mainaroo(GameEnvironment *env)
 static int validate_input(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
-
-    printf("\n ONE BYTE FSM : %d %u\n", game_env->byte_input, game_env->byte_input);
     // change name of one_byte, i hate it
     if(game_env->byte_input > LOWER_0 && game_env->byte_input < UPPER_8) {
         check_board(env);
@@ -119,11 +118,10 @@ static int validate_input(Environment *env){
 //        game_env->response_type = ACCEPTED;
         print_board(env);
     } else {
-        uint8_t game_id = 0;
         game_env->response_type = INVALID;
 
         send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
-        send(game_env->fd_current_player, &game_id, sizeof (game_id), 0);
+        send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
 
         printf("not approved\n");
         return WAIT;
@@ -135,21 +133,20 @@ static int invalid_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
     // todo will probably have to read two bytes of info - gameID and number
-    read(game_env->current_player, &game_env->one_byte, 1);
+    read(game_env->fd_current_player, &game_env->one_byte, 1);
     return VALIDATE;
 }
 
 static int accepted_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
-    uint8_t game_id = 0;
     send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
 
     switch_players(env);
-
     uint8_t invitation = INVITE;
+    printf("Sending invite to player: %d \n", game_env->fd_current_player);
 
-    send(game_env->fd_current_player, &game_id, sizeof (game_id), 0);
+    send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
     send(game_env->fd_current_player, &invitation, sizeof (invitation), 0);
 
     for (int i = 0; i < 9; i++) {
@@ -167,7 +164,6 @@ static bool check_board(Environment *env){
     game_env->received_position = (int) game_env->byte_input - OFFSET;
 
     if(game_env->game_board[game_env->received_position] == BLANK_SPACE){
-        printf("update board\n");
         game_env->game_board[game_env->received_position] = game_env->current_player;
         game_env->response_type = ACCEPTED;
         return true;
@@ -198,15 +194,14 @@ static void switch_players(Environment *env){
     game_env = (GameEnvironment *) env;
 
     game_env->play_count++;
-
     if(game_env->fd_current_player == game_env->fd_client_X){
         int swap_x = game_env->fd_client_O;
         game_env->fd_current_player = swap_x;
         game_env->current_player = O;
     } else if (game_env->fd_current_player == game_env->fd_client_O) {
-        game_env->current_player = X;
         int swap_o = game_env->fd_client_X;
         game_env->fd_current_player = swap_o;
+        game_env->current_player = X;
     }
 }
 
