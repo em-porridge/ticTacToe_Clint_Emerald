@@ -1,78 +1,17 @@
-//
-// Created by emu on 2021-03-02.
-//
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
-#include <netdb.h>
-#include <sys/un.h>
-#include <sys/stat.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include "fsm.h"
+#include "v2_FSM.h"
 #include "shared.h"
 
-// FSM functions
-static int validate_input(Environment *env);
-static int invalid_move(Environment *env);
-static int accepted_move(Environment *env);
-static int game_over(Environment *env);
-static int terminate(Environment *env);
 
-
-// helpers
-static bool check_board(Environment *env);
-static void print_board(Environment *env);
-static int check_rows_for_winner(Environment *env);
-static int check_col_for_winner(Environment *env);
-static int check_diagonal_for_winner(Environment *env);
-static bool check_win(Environment *env);
-static void switch_players(Environment *env);
-
-typedef enum
-{
-    INIT,
-    WAIT, // 4
-    VALIDATE, // 5
-    TURNOVER, // 6
-    GAMEOVER, // 7
-    ERROR, // 8
-
-} States;
-
-// todo add a waiting player vs current player
-typedef struct
-{
-    Environment common;
-    // keep track of current player
-    int current_player;
-    int game_ID;
-    // game ID ???
-
-    // file descriptors
-    int fd_current_player;
-//    int server_fd;
-    int fd_client_X;
-    int fd_client_O;
-
-    // for getting player move
-    int8_t byte_input;
-    int8_t response_type;
-    int8_t winner;
-
-    // for storing
-    int game_board[9];
-    int received_position;
-    int play_count;
-    char one_byte;
-} GameEnvironment;
-
+// driver for turn FSM
 int mainaroo(GameEnvironment *env)
 {
-
     StateTransition transitions[] =
             {
                     {FSM_INIT, VALIDATE, &validate_input},
@@ -87,9 +26,6 @@ int mainaroo(GameEnvironment *env)
     int code;
     int start_state;
     int end_state;
-
-    // fix this in the server
-//    env.play_count = 0;
 
     start_state = FSM_INIT;
     end_state   = VALIDATE;
@@ -106,6 +42,7 @@ int mainaroo(GameEnvironment *env)
     return EXIT_SUCCESS;
 }
 
+// validates input
 static int validate_input(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
@@ -129,26 +66,32 @@ static int validate_input(Environment *env){
     return TURNOVER;
 }
 
+// send re-request due to invalid move
 static int invalid_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
     // todo will probably have to read two bytes of info - gameID and number
     read(game_env->fd_current_player, &game_env->one_byte, 1);
+    read(game_env->fd_current_player, &game_env->one_byte, 1);
     return VALIDATE;
 }
 
+// accepted move switch turns
 static int accepted_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
+
     send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
+    for (int i = 0; i < 9; i++) {
+        uint8_t play = game_env->game_board[i];
+        send(game_env->fd_current_player, &play, sizeof (play), 0);
+    }
 
     switch_players(env);
     uint8_t invitation = INVITE;
-    printf("Sending invite to player: %d \n", game_env->fd_current_player);
 
-    send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
     send(game_env->fd_current_player, &invitation, sizeof (invitation), 0);
-
+    send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
     for (int i = 0; i < 9; i++) {
         uint8_t play = game_env->game_board[i];
         send(game_env->fd_current_player, &play, sizeof (play), 0);
@@ -188,7 +131,6 @@ static void print_board(Environment *env){
     printf("\n\n");
 }
 
-//// todo simplify
 static void switch_players(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *) env;
@@ -307,6 +249,7 @@ static int game_over(Environment *env){
         write(game_env->fd_client_X, &tie, 1);
         write(game_env->fd_client_O, &tie, 1);
     }
+    game_env->game_over = true;
     return FSM_EXIT;
 }
 

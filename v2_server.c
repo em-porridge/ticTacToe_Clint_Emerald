@@ -20,21 +20,24 @@
 int prepare_server();
 
 
-typedef struct {
-    int game_id;
-    GameEnvironment game_env;
-
-} SingleGame;
-
-typedef struct {
-    int x_fd;
-    int o_fd;
-    int game_id;
-} GameLobby;
+//typedef struct {
+//    int game_id;
+//    GameEnvironment game_env;
+//
+//} SingleGame;
+//
+//typedef struct {
+//    int x_fd;
+//    int o_fd;
+//    int game_id;
+//    bool new_game;
+//    int existing_game_id;
+//} GameLobby;
 
 
 static void create_new_game(GameLobby *lobby, GameEnvironment *new_env);
-
+static void create_from_existing_game(GameLobby *lobby, GameEnvironment *existing_env);
+static int find_disconnected(int cfd, SingleGame * collection);
 
 int main() {
     fd_set rfds, ready_sockets;
@@ -43,8 +46,9 @@ int main() {
 
     SingleGame gameCollection[10];
     GameLobby lobby;
-    game_id = 0;
+    game_id = 2;
     lobby.x_fd = 0;
+    lobby.new_game = true;
 
     FD_ZERO(&rfds);
     FD_SET((u_int) sfd, &rfds);
@@ -69,9 +73,13 @@ int main() {
                     cfd = accept4(sfd, NULL, NULL, SOCK_NONBLOCK);
                     FD_SET((u_int) cfd, &rfds);
                     // if there is not x in the queue then new connect is player x
-                    if (lobby.x_fd == 0) {
+                    if (lobby.x_fd == 0 && lobby.new_game == true) {
                         lobby.x_fd = cfd;
                         // send the assignmennt to the clientAreas
+                    } else if (lobby.new_game==false) {
+                        lobby.o_fd = cfd;
+                        lobby.new_game = true;
+                        create_from_existing_game(&lobby, &gameCollection[lobby.existing_game_id].game_env);
                     } else {
                         lobby.o_fd = cfd;
                         lobby.game_id = game_id;
@@ -95,17 +103,32 @@ int main() {
                     uint8_t game;
                     num_read = read(cfd, &game, sizeof (game));
                     printf("GAME ID: %d\n", game);
-                    // this needs to be better
                     read(cfd, &gameCollection[game].game_env.byte_input, sizeof (gameCollection[game].game_env.byte_input));
                     if (num_read < 1) {
-                        // disconnect
-                        // put
+                        lobby.existing_game_id =  find_disconnected(cfd, gameCollection);
+                        if(lobby.existing_game_id == -1) {
+                            // dead game - need to change data structure
+                        } else {
+                            lobby.new_game = false;
+                            if(cfd == gameCollection[lobby.existing_game_id].game_env.fd_client_X) {
+                                gameCollection[lobby.existing_game_id].game_env.fd_client_X = gameCollection[game].game_env.fd_client_O;
+                                gameCollection[lobby.existing_game_id].game_env.fd_client_O = 0;
+                                // send disconnect
+                            } else {
+                                gameCollection[lobby.existing_game_id].game_env.fd_client_O = 0;
+                            }
+                            int8_t disconnect = DISCONNECT;
+                            lobby.x_fd = gameCollection[lobby.existing_game_id].game_env.fd_client_X;
+                            send(lobby.x_fd, &disconnect, sizeof (disconnect), 0);
+                        }
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
                     }
                     fflush(stdout);
-                    mainaroo(&gameCollection[game].game_env);
-                    printf("Exit FSM....\n");
+                    if (lobby.new_game==true){
+                        mainaroo(&gameCollection[game].game_env);
+                        printf("Exit FSM....\n");
+                    }
                 }
             }
         }
@@ -148,6 +171,8 @@ static void create_new_game(GameLobby *lobby, GameEnvironment *new_env){
     new_env->fd_client_O = lobby->o_fd;
     new_env->fd_current_player = lobby->x_fd;
     new_env->current_player = X;
+    new_env->play_count = 0;
+
     for(int i = 0; i < 9; i++){
         new_env->game_board[i] = BLANK_SPACE;
     }
@@ -155,7 +180,6 @@ static void create_new_game(GameLobby *lobby, GameEnvironment *new_env){
     uint8_t welcome = WELCOME;
     uint8_t assign_x = X;
     uint8_t assign_o = O;
-    uint8_t invite = INVITE;
 
     send(new_env->fd_client_X, &welcome, sizeof (welcome), 0);
     send(new_env->fd_client_X, &assign_x, sizeof (assign_x), 0);
@@ -167,3 +191,42 @@ static void create_new_game(GameLobby *lobby, GameEnvironment *new_env){
 
     printf("New GAME! \n");
 }
+
+static void create_from_existing_game(GameLobby *lobby, GameEnvironment *existing_env){
+    existing_env->fd_client_O = lobby->o_fd;
+    existing_env->fd_current_player = lobby->x_fd;
+    existing_env->current_player = X;
+
+    for(int i = 0; i < 9; i++){
+        existing_env->game_board[i] = BLANK_SPACE;
+    }
+
+    uint8_t welcome = WELCOME;
+    uint8_t assign_x = X;
+    uint8_t assign_o = O;
+
+    send(existing_env->fd_client_X, &welcome, sizeof (welcome), 0);
+    send(existing_env->fd_client_X, &assign_x, sizeof (assign_x), 0);
+    send(existing_env->fd_client_X, &lobby->existing_game_id, sizeof (lobby->existing_game_id), 0);
+
+    send(existing_env->fd_client_O, &welcome, sizeof (welcome), 0);
+    send(existing_env->fd_client_O, &assign_o, sizeof (assign_o), 0);
+    send(existing_env->fd_client_O, &lobby->existing_game_id, sizeof (lobby->existing_game_id), 0);
+
+    printf("NEW GAME FROM EXISITING\n");
+}
+
+static int find_disconnected(int cfd, SingleGame * collection){
+    for(int i = 0; i < 10; i++) {
+        if (collection->game_env.fd_client_X == cfd | collection->game_env.fd_client_O == cfd) {
+            printf("Found disconnect at index %d\n", i);
+            return i;
+        }
+        if(collection->game_env.fd_client_X == 0 && collection->game_env.fd_client_O == 0) {
+            return 0;
+        }
+        collection++;
+    }
+    return -1;
+}
+
