@@ -79,24 +79,31 @@ int main() {
                         GameEnvironment new_game;
                         create_new_game(&lobby, &new_game);
                         lobby.x_fd = 0;
-
+                        lobby.o_fd = 0;
                         SingleGame addToCollection;
+
                         addToCollection.game_env = new_game;
                         addToCollection.game_env.game_ID = game_id;
+
                         addToCollection.game_id = game_id;
+
                         gameCollection[game_id] = addToCollection;
                         game_id++;
                     }
                 } else {
                     cfd = i;
                     uint8_t game;
-                    num_read = read(cfd, &game, 1);
+                    num_read = read(cfd, &game, sizeof (game));
                     printf("GAME ID: %d\n", game);
+                    // this needs to be better
                     read(cfd, &gameCollection[game].game_env.byte_input, sizeof (gameCollection[game].game_env.byte_input));
                     if (num_read < 1) {
+                        // disconnect
+                        // put
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
                     }
+                    fflush(stdout);
                     mainaroo(&gameCollection[game].game_env);
                     printf("Exit FSM....\n");
                 }
@@ -135,9 +142,6 @@ int prepare_server() {
     return sfd;
 }
 
-// todo build a new game
-//
-
 static void create_new_game(GameLobby *lobby, GameEnvironment *new_env){
 
     new_env->fd_client_X = lobby->x_fd;
@@ -156,6 +160,7 @@ static void create_new_game(GameLobby *lobby, GameEnvironment *new_env){
     send(new_env->fd_client_X, &welcome, sizeof (welcome), 0);
     send(new_env->fd_client_X, &assign_x, sizeof (assign_x), 0);
     send(new_env->fd_client_X, &lobby->game_id, sizeof (lobby->game_id), 0);
+
     send(new_env->fd_client_O, &welcome, sizeof (welcome), 0);
     send(new_env->fd_client_O, &assign_o, sizeof (assign_o), 0);
     send(new_env->fd_client_O, &lobby->game_id, sizeof (lobby->game_id), 0);
