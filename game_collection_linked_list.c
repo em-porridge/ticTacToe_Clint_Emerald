@@ -92,7 +92,6 @@ GameEnvironment * rematch(node **head, int game_id){
     struct node *tmp;
 
     while(current->next != NULL | current->game_id != game_id){
-        //todo here
         tmp = current;
         current=current->next;
     }

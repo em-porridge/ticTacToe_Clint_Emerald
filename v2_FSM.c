@@ -80,18 +80,20 @@ static int invalid_move(Environment *env){
 static int accepted_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
-
+    
+//    send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
     send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
-    for (int i = 0; i < 9; i++) {
-        uint8_t play = game_env->game_board[i];
-        send(game_env->fd_current_player, &play, sizeof (play), 0);
-    }
+//    for (int i = 0; i < 9; i++) {
+//        uint8_t play = game_env->game_board[i];
+//        send(game_env->fd_current_player, &play, sizeof (play), 0);
+//    }
 
     switch_players(env);
-    uint8_t invitation = INVITE;
 
-    send(game_env->fd_current_player, &invitation, sizeof (invitation), 0);
+    uint8_t invitation = INVITE;
     send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
+    send(game_env->fd_current_player, &invitation, sizeof (invitation), 0);
+
     for (int i = 0; i < 9; i++) {
         uint8_t play = game_env->game_board[i];
         send(game_env->fd_current_player, &play, sizeof (play), 0);
