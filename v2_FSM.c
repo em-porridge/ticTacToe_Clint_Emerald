@@ -80,7 +80,7 @@ static int invalid_move(Environment *env){
 static int accepted_move(Environment *env){
     GameEnvironment *game_env;
     game_env = (GameEnvironment *)env;
-    
+
 //    send(game_env->fd_current_player, &game_env->game_ID, sizeof (game_env->game_ID), 0);
     send(game_env->fd_current_player, &game_env->response_type, sizeof (game_env->response_type), 0);
 //    for (int i = 0; i < 9; i++) {
