@@ -8,16 +8,16 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <netdb.h>
-#include "fsm.h"
-#include "game_collection_linked_list.h"
+#include "../fsm.h"
+#include "../Linked_Lists/game_collection_linked_list.h"
 
 
 // todo make a .h file
-#include "v2_FSM.h"
+#include "../Previous_FSMs/v2_FSM.h"
 
-#include "shared.h"
+#include "../shared.h"
 
-int prepare_server();
+int prepare_tcp_listening_socket();
 
 static void create_new_game(GameLobby *lobby, GameEnvironment *new_env);
 static void create_from_existing_game(GameLobby *lobby, GameEnvironment *existing_env);
@@ -30,7 +30,7 @@ static void handle_disconnect(node *lobby, int cfd);
 int main() {
     fd_set rfds, ready_sockets;
     int retval, game_id;
-    int sfd = prepare_server();
+    int sfd = prepare_tcp_listening_socket();
 
     node * Lobby;
     init(&Lobby);
@@ -68,7 +68,7 @@ int main() {
                     num_read = read(cfd, &game, sizeof (game));
 
                     if (num_read < 1) {
-                        // handle diconnect
+                        // handle disconnect
                         printf("++++++ Disconnect +++++");
                         handle_disconnect(Lobby, cfd);
                         close(cfd);
@@ -78,7 +78,7 @@ int main() {
                         // FSM turn - if game over - rematch
                         if(execute_turn(&Lobby, game, position_request)==1){
                             // new game
-                            printf(" ** Rematch ** h\n");
+                            printf(" **** Rematch **** \n");
                             GameEnvironment * rematching_game;
                             rematching_game = rematch(&Lobby, game);
                             send_new_game_data(rematching_game, game);
@@ -96,7 +96,7 @@ int main() {
  *
  * @return int (socket) file descriptor
  */
-int prepare_server() {
+int prepare_tcp_listening_socket() {
     struct sockaddr_in addr;
 
     int sfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -161,3 +161,4 @@ static void handle_disconnect(node *lobby, int cfd){
             reset_lobby(&lobby);
         }
     }
+

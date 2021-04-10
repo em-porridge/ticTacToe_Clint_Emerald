@@ -1,10 +1,12 @@
 //
-// Created by emu on 2021-03-04.
+// Created by emu on 2021-04-07.
 //
 #include "shared.h"
+#include "fsm.h"
 
-#ifndef A01_CLINT_EMERALD_V2_FSM_H
-#define A01_CLINT_EMERALD_V2_FSM_H
+#ifndef A01_CLINT_EMERALD_V3_TTT_FSM_H
+#define A01_CLINT_EMERALD_V3_TTT_FSM_H
+
 typedef enum
 {
     INIT,
@@ -16,7 +18,7 @@ typedef enum
 
 } States;
 
-int mainaroo(GameEnvironment *env);
+int mainaroo( SingleTTTGameEnv *env);
 static int validate_input(Environment *env);
 static int invalid_move(Environment *env);
 static int accepted_move(Environment *env);
@@ -30,6 +32,4 @@ static int check_diagonal_for_winner(Environment *env);
 static int game_over(Environment *env);
 static int terminate(Environment *env);
 
-
-
-#endif //A01_CLINT_EMERALD_V2_FSM_H
+#endif //A01_CLINT_EMERALD_V3_TTT_FSM_H

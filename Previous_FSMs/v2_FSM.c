@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <netinet/in.h>
-#include "fsm.h"
+#include "../fsm.h"
 #include "v2_FSM.h"
-#include "shared.h"
+#include "../shared.h"
 
 
 // driver for turn FSM

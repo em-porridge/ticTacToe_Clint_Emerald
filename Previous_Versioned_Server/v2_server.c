@@ -13,11 +13,11 @@
 
 
 // todo make a .h file
-#include "v2_FSM.c"
+#include "../Previous_FSMs/v2_FSM.c"
 
-#include "shared.h"
+#include "../shared.h"
 
-int prepare_server();
+int prepare_tcp_listening_socket();
 
 
 //typedef struct {
@@ -140,7 +140,7 @@ int main() {
  *
  * @return int (socket) file descriptor
  */
-int prepare_server() {
+int prepare_tcp_listening_socket() {
     struct sockaddr_in addr;
 
     int sfd = socket(AF_INET, SOCK_STREAM, 0);

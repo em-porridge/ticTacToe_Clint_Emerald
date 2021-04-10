@@ -1,9 +1,9 @@
 //
 // Created by emu on 2021-03-03.
 //
-#include "shared.h"
-#include "fsm.h"
-#include "v2_FSM.h"
+#include "../shared.h"
+#include "../fsm.h"
+#include "../Previous_FSMs/v2_FSM.h"
 
 
 #ifndef A01_CLINT_EMERALD_GAME_COLLECTION_LINKED_LIST_H
