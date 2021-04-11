@@ -5,7 +5,7 @@
 
 // https://www.sciencedirect.com/topics/computer-science/registered-port#:~:text=Ports%200%20through%201023%20are,be%20used%20dynamically%20by%20applications.
 // /etc/services
-#define PORT 40000
+#define PORT 42069
 #define BACKLOG 5
 
 #define BLANK_SPACE 45
@@ -68,7 +68,17 @@
 #define PAPER 2
 #define SCISSORS 3
 
+typedef struct {
+    int32_t uid;
+    int8_t req_type;
+    int8_t context;
+    int8_t payload_length;
 
+    int8_t payload_first_byte;
+    int8_t payload_second_byte;
+    int8_t payload_third_byte;
+
+} data ;
 
 
 /** A singular Rock Paper Scissors game envirnoment **/
