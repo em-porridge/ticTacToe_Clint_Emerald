@@ -36,7 +36,7 @@ static int check_col_for_winner(Environment *env);
 static int check_diagonal_for_winner(Environment *env);
 
 
-// sending codes
+// sending codes // todo updaate to array sending
 static int send_update_client_code(Environment *env);
 static int send_accepted_move_code(Environment *env);
 static int send_decline_move_code(Environment *env);

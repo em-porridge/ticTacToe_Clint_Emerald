@@ -11,7 +11,13 @@
 typedef struct node   {
     SingleRPSGameEnv RPSGame;
     SingleTTTGameEnv TTTGame;
+
+    uint8_t game_type;
     uint32_t game_id;
+
+    uint32_t uid_client_one;
+    uint32_t uid_client_two;
+
     struct node *next;
 } node;
 

@@ -43,8 +43,6 @@ int mainaroo(SingleTTTGameEnv *env)
     return EXIT_SUCCESS;
 }
 
-
-
 // validates input
 static int validate_input(Environment *env){
     SingleTTTGameEnv *game_env;
@@ -86,6 +84,16 @@ static int accepted_move(Environment *env){
     send_update_client_code(env);
     return FSM_EXIT;
 }
+
+static int game_over(Environment *env){
+    SingleTTTGameEnv *game_env;
+    game_env = (SingleTTTGameEnv *) env;
+
+    game_env->game_over = true;
+    return FSM_EXIT;
+}
+
+// =========== HELPER FUNCTIONS ================== //
 
 static bool check_board(Environment *env){
     SingleTTTGameEnv *game_env;
@@ -214,20 +222,12 @@ static int check_diagonal_for_winner(Environment *env){
     }
 }
 
-
-static int game_over(Environment *env){
-    SingleTTTGameEnv *game_env;
-    game_env = (SingleTTTGameEnv *) env;
-
-    game_env->game_over = true;
-    return FSM_EXIT;
-}
-
 static int terminate(Environment *env){
     printf("Exiting...\n");
     exit(EXIT_FAILURE);
 }
 
+//===============CODES===============//
 
 static int send_update_client_code(Environment *env){
     SingleTTTGameEnv *game_env;

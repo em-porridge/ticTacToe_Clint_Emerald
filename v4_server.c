@@ -35,7 +35,7 @@ int main() {
     uint32_t unique_game_id;
 
     int sfd = prepare_tcp_listening_socket(&addr);
-    int updfd = prepare_upd_socket(&addr);
+    int udpfd = prepare_upd_socket(&addr);
 
     // initialize a TTT lobby and a RPS lobby
     node *game_lobby;
@@ -46,7 +46,7 @@ int main() {
 
     FD_ZERO(&rfds);
     FD_SET((u_int) sfd, &rfds);
-    FD_SET((u_int) updfd, &rfds);
+    FD_SET((u_int) udpfd, &rfds);
 
     while (1) {
         ssize_t num_read;
@@ -71,6 +71,7 @@ int main() {
                 } else {
                     cfd = i;
                     num_read = read_data(cfd, received_data);
+
                     if (num_read < 1) {
                         printf("++++++ Disconnect +++++ \n");
                         node * disconnected_node = return_link_by_uid(&game_lobby, received_data->uid);
@@ -84,28 +85,36 @@ int main() {
                         } else {
                             // todo update with RPS
                         }
+
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
+
                     } else {
                         if(received_data->uid == 0) {
                             printf("newGame");
                             handle_new_connection(game_lobby, cfd, unique_game_id, received_data->payload_second_byte);
                         } else {
                             node * game_node = return_link_by_uid(&game_lobby, received_data->uid);
-
-                            // todo need a better way of checking :/ !! ADD a game type to main node area
-                            if(game_node->TTTGame.client_x) {
-                                if (game_node->TTTGame.fd_current_player == cfd) {
-                                    mainaroo(&game_node->TTTGame);
-                                } else {
-                                    send_error_code(cfd, GAME_ERROR_ACTION_OUT_OF_TURN);
-                                }
-                                if(game_node->TTTGame.game_over) {
-                                    // disconnect??
-                                }
+                            // if return null node
+                            if(game_node == NULL) {
+                                // send uid error
                             } else {
-                                // run RPS
+                                // check the game type
+                                if(game_node->TTTGame.game_type == 1) {
+                                    if (game_node->TTTGame.fd_current_player == cfd) {
+                                        mainaroo(&game_node->TTTGame);
+                                    } else {
+                                        send_error_code(cfd, GAME_ERROR_ACTION_OUT_OF_TURN);
+                                    }
+                                    if(game_node->TTTGame.game_over) {
+                                        // disconnect??
+                                    }
+                                } else {
+                                    // run RPS
+                                }
                             }
+
+
                         }
                     }
                 }
@@ -152,6 +161,7 @@ int prepare_tcp_listening_socket(struct sockaddr_in *addr) {
  */
 int prepare_upd_socket(struct sockaddr_in *addr){
     int udpfd = socket(AF_INET, SOCK_DGRAM, 0);
+
     bind(udpfd, (struct sockaddr*)addr, sizeof(struct sockaddr_in));
     printf("UDP FD: %d \n", udpfd);
 
@@ -207,27 +217,30 @@ static int read_data(int cfd, data *client_data){
  * **/
 static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t game_type) {
     if (game_type == 1) {
+        // if there is already a client in the lobby
         if (lobby->TTTGame.client_x > 0) {
 
+            // assign new uid
             send_new_game_code(cfd, uid);
 
             SingleTTTGameEnv newGameEnv;
             newGameEnv.client_x = lobby->TTTGame.client_x;
             newGameEnv.client_o = cfd;
             newGameEnv.fd_current_player = newGameEnv.client_x;
-            newGameEnv.unique_game_id = lobby->TTTGame.unique_game_id;
+
+            // set uids
+            newGameEnv.client_x_uid = lobby->TTTGame.client_x_uid;
+            newGameEnv.client_o_uid = uid;
 
             insert_new_ttt_game(&lobby, &newGameEnv);
             print_ttt_collection(&lobby);
 
-            //todo send as array
             send_start_ttt_game_code(newGameEnv.client_x, newGameEnv.client_o);
             reset_ttt_lobby(&lobby);
-
             return 0;
         } else if(lobby->TTTGame.client_x == 0) {
             lobby->TTTGame.client_x = cfd;
-            lobby->TTTGame.unique_game_id = uid;
+            lobby->TTTGame.client_x_uid = uid;
             send_new_game_code(cfd, uid);
             return 0;
         }
@@ -239,6 +252,7 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
     return -1;
 }
 
+// todo update
 static int handle_client_disconnect(int cfd) {
     int8_t status = UPDATE;
     int8_t context = UPDATE_DISCONNECT;
@@ -247,7 +261,6 @@ static int handle_client_disconnect(int cfd) {
     send(cfd, &status, sizeof (status), 0);
     send(cfd, &context, sizeof (context), 0);
     send(cfd, &payload_length, sizeof (payload_length), 0);
-
     return 0;
 }
 
@@ -277,10 +290,11 @@ static int send_new_game_code(int cfd, uint32_t uid) {
     byte_array[0] = status;
     byte_array[1] = context;
     byte_array[2] = payload_length;
-    byte_array[3] = (payload >> 0);
-    byte_array[4] = (payload >> 8);
-    byte_array[5] = (payload >> 16);
-    byte_array[6] = (payload >> 24);
+
+    byte_array[3] = (payload >> 24);
+    byte_array[4] = (payload >> 16);
+    byte_array[5] = (payload >> 8);
+    byte_array[6] = (payload);
 
     send(cfd, &byte_array, sizeof (byte_array), 0);
 
@@ -288,11 +302,12 @@ static int send_new_game_code(int cfd, uint32_t uid) {
 }
 
 static int send_start_ttt_game_code(int cfd_x, int cfd_o) {
-    int8_t status = UPDATE_START_GAME;
-    int8_t context = CONFIRMATION;
-    int8_t payload_length = 0;
-    int8_t payload_x = X;
-    int8_t payload_o = O;
+
+    uint8_t status = UPDATE;
+    uint8_t context = UPDATE_START_GAME;
+    uint8_t payload_length = 1;
+    uint8_t payload_x = X;
+    uint8_t payload_o = O;
 
     unsigned char byte_array_x[4];
     unsigned char byte_array_o[4];

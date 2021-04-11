@@ -24,9 +24,12 @@ int init_lobbies(node **head){
 
     // A TTT Lobby
     SingleTTTGameEnv ttt_lobby;
-    ttt_lobby.unique_game_id = 2;
+    ttt_lobby.client_o_uid = 2;
+    ttt_lobby.client_x_uid = 2;
+
     ttt_lobby.client_x = 0;
     ttt_lobby.client_o = 0;
+
     (*head)->TTTGame=ttt_lobby;
 
     (*head)->game_id = 2;
@@ -53,7 +56,11 @@ int insert_new_ttt_game(node **head, SingleTTTGameEnv *new_env) {
     }
 
     new_TTT_node->next = NULL;
-    new_TTT_node->game_id = new_env->unique_game_id;
+
+    new_TTT_node->game_type = 1;
+    new_TTT_node->uid_client_one = new_env->client_x_uid;
+    new_TTT_node->uid_client_two = new_env->client_o_uid;
+
     new_TTT_node->TTTGame = *new_env;
 
     for(int i = 0; i < 9; i++) {
@@ -79,8 +86,10 @@ int insert_new_rps_game(node **head, int32_t game_id, int clientOneFD, int clien
         fprintf(stderr, "Failed to insert a new RSP Game\n");
         return 1;
     }
+
     new_rsp_node->next = NULL;
     new_rsp_node->game_id = game_id;
+
 
     SingleRPSGameEnv new_env;
     new_env.unique_game_id = game_id;
@@ -95,12 +104,19 @@ node *return_link_by_uid(node ** head, uint32_t uid){
     struct node * current = *head;
     struct node * tmp;
 
+    //todo update
     do {
         tmp = current;
         current = current->next;
-    } while (current->game_id != uid);
+    } while ((tmp->uid_client_one != uid || tmp->uid_client_two != uid) && current);
 
-    return current;
+    if(tmp->uid_client_one == uid) {
+        return tmp;
+    } else if(tmp->uid_client_two == uid) {
+        return tmp;
+    } else {
+        return NULL;
+    }
 }
 
 
@@ -113,7 +129,8 @@ void reset_rps_lobby(node **head){
 
 void reset_ttt_lobby(node **head) {
     struct node *current = *head;
-    current->TTTGame.unique_game_id = 2;
+    current->TTTGame.client_x_uid = 2;
+    current->TTTGame.client_o_uid = 2;
     current->TTTGame.client_x = 0;
     current->TTTGame.client_o = 0;
 }

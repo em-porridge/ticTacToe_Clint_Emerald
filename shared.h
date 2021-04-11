@@ -85,7 +85,10 @@ typedef struct {
 typedef struct {
     Environment common;
     // unique ID
+
     int32_t unique_game_id;
+
+    data FSM_data_reads;
 
     int fd_client_player_one;
     int fd_client_player_two;
@@ -110,7 +113,9 @@ typedef struct{
     int game_type;
 
     // unique ID
-    int32_t unique_game_id;
+    int32_t client_x_uid;
+    int32_t client_o_uid;
+
     int client_x;
     int client_o;
     int fd_current_player;
