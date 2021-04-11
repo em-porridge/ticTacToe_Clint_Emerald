@@ -50,9 +50,10 @@ int execute_turn(node **head, int game_id_to_find, int8_t requested){
     if(current->game_env.game_over == true) {
         return 1;
     }
-
     return 0;
 }
+
+
 
 // inserts a new game in to linked list
 int insert_new_game(node **head, int game_id, int xfd, int ofd){
@@ -216,13 +217,11 @@ void deinit(node **head)
 
 // restarts lobby to default game id and client fd
 void reset_lobby(node **head){
-
     struct node *current = *head;
     current->game_env.game_ID = 2;
     current->game_env.fd_client_O = 0;
     current->game_env.fd_client_X = 0;
     current->game_id= 2;
-
 }
 
 

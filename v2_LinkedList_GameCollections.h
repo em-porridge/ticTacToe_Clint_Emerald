@@ -23,7 +23,9 @@ void print(node **head);
 void deinit(node **head);
 int execute_turn(node **head, int game_id_to_find, int8_t requested);
 int find_remaining_by_id(node **head, int cfd);
-GameEnvironment * rematch(node **head, int game_id);
+
+
+//GameEnvironment * rematch(node **head, int game_id);
 
 
 

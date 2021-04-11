@@ -18,24 +18,16 @@
 
 int prepare_tcp_listening_socket(struct sockaddr_in *addr);
 int prepare_upd_socket(struct sockaddr_in *addr);
-
-static int read_new_client_request(int cfd);
 static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t game_type);
 
-//static int handle_existing_client_request(int cfd);
 
-//static void create_new_game(GameLobby *lobby, GameEnvironment *new_env);
-//static void create_from_existing_game(GameLobby *lobby, GameEnvironment *existing_env);
-//static int find_disconnected(int cfd, SingleGame * collection);
-//
-//static void handle_incoming_cfd(node *lobby, int cfd, int game_id);
-//static void send_new_game_data(GameEnvironment *fromNode, int new_game_ID);
-//static void handle_disconnect(node *lobby, int cfd);
+static int handle_client_disconnect(int cfd);
+static int read_new_client_request(int cfd);
+static int send_error_code(int cfd, int error_code);
+static int send_new_game_code(int cfd, uint32_t uid);
+static int send_start_ttt_game_code(int cfd_x, int cfd_o);
+static int out_of_turn_client_request(int cfd);
 
-static void handle_incoming_ttt_connection(node *lobby, int cfd, uint32_t uid);
-
-static void read_uid(int cfd);
-static void read_client_request(int cfd);
 
 
 int main() {
@@ -82,29 +74,36 @@ int main() {
                     FD_SET((u_int) cfd, &rfds);
                 } else {
                     cfd = i;
-                    int32_t game;
-
-                    // read unique id
-                    num_read = read(cfd, &game, sizeof (game));
-
-                    // todo check if there is uid?? -- results in error if coming from new connection
+                    // todo error check
+                    int32_t client_game_uid;
+                    num_read = read(cfd, &client_game_uid, sizeof (client_game_uid));
 
                     if (num_read < 1) {
                         printf("++++++ Disconnect +++++ \n");
-//                        handle_disconnect(Lobby, cfd);
+                        node * disconnected_node = return_link_by_uid(&game_lobby, client_game_uid);
+                        // todo update with this RPS
+                        if(disconnected_node->TTTGame.client_o == cfd) {
+                            handle_client_disconnect(cfd);
+                        } else if (disconnected_node->TTTGame.client_x == cfd) {
+                            handle_client_disconnect(cfd);
+                        } else {
+                            // wah
+                        }
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
                     } else {
-                        // if game uid is zero, add client to appropriate game lobby
-                        if(game == 0) {
+                        if(client_game_uid == 0) {
                             int ttt_rps = read_new_client_request(cfd);
                             handle_new_connection(game_lobby, cfd, unique_game_id, ttt_rps);
                         } else {
-                            node * game_node = return_link_by_uid(&game_lobby, game);
-
+                            node * game_node = return_link_by_uid(&game_lobby, client_game_uid);
                             // todo need a better way of checking :/
                             if(game_node->TTTGame.client_x) {
-                                mainaroo(&game_node->TTTGame);
+                                if (game_node->TTTGame.fd_current_player == cfd) {
+                                    mainaroo(&game_node->TTTGame);
+                                } else {
+                                    out_of_turn_client_request(cfd);
+                                }
                                 if(game_node->TTTGame.game_over) {
                                     // disconnect??
                                 }
@@ -112,14 +111,6 @@ int main() {
                                 // run RPS
                             }
                         }
-                        // FSM turn - if game over - disconnect all?? -- todo figure out what ot do on diconnect
-//                        if(execute_turn(&Lobby, game, position_request)==1){
-//                            // new game
-//                            printf(" **** Rematch **** \n");
-//                            GameEnvironment * rematching_game;
-//                            rematching_game = rematch(&Lobby, game);
-//                            send_new_game_data(rematching_game, game);
-//                        }
                     }
                 }
             }
@@ -180,22 +171,23 @@ int prepare_upd_socket(struct sockaddr_in *addr){
 static int read_new_client_request(int cfd){
     // protocol
     // todo add error checking for ALLLLL these values
-    int8_t version;
-    int8_t game_id;
     int8_t req_type;
     int8_t req_context;
     int8_t payloadLength = 0;
-    int8_t catchPayload;
+
+    int8_t version;
+    int8_t game_id;
 
     read(cfd, &req_type, sizeof (req_type));
     read(cfd, &req_context, sizeof (req_context));
+    // error
     read(cfd, &payloadLength, sizeof (payloadLength));
 
     // todo if statement here for RPS ?
     read(cfd, &version, sizeof (version));
     read(cfd, &game_id, sizeof (game_id));
 
-    printf("--- NEW CLIENT INFO --- \n req_type := %u \n  req_context := %u \n payloadLength:= %u \n gameID:= %u \n ", req_type, req_context, payloadLength, game_id);
+    printf("--- NEW CLIENT INFO --- \n  req_context := %u \n payloadLength:= %u \n gameID:= %u \n ", req_context, payloadLength, game_id);
     return game_id;
 }
 
@@ -207,23 +199,26 @@ static int read_new_client_request(int cfd){
 static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t game_type) {
     if (game_type == 1) {
         if (lobby->TTTGame.client_x > 0) {
-            send(cfd, &uid, sizeof (uint32_t), 0);
+
+            send_new_game_code(cfd, uid);
 
             SingleTTTGameEnv newGameEnv;
             newGameEnv.client_x = lobby->TTTGame.client_x;
             newGameEnv.client_o = cfd;
+            newGameEnv.fd_current_player = newGameEnv.client_x;
             newGameEnv.unique_game_id = lobby->TTTGame.unique_game_id;
 
             insert_new_ttt_game(&lobby, &newGameEnv);
             print_ttt_collection(&lobby);
-            // todo start a new game
+
+            send_start_ttt_game_code(newGameEnv.client_x, newGameEnv.client_o);
             reset_ttt_lobby(&lobby);
 
             return 0;
         } else if(lobby->TTTGame.client_x == 0) {
             lobby->TTTGame.client_x = cfd;
             lobby->TTTGame.unique_game_id = uid;
-            send(cfd, &uid, sizeof (uint32_t), 0);
+            send_new_game_code(cfd, uid);
             return 0;
         }
     } else if (game_type == 2){
@@ -234,4 +229,74 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
     return -1;
 }
 
+static int handle_client_disconnect(int cfd) {
+    int8_t status = UPDATE;
+    int8_t context = UPDATE_DISCONNECT;
+    int8_t payload_length = 0;
 
+    send(cfd, &status, sizeof (status), 0);
+    send(cfd, &context, sizeof (context), 0);
+    send(cfd, &payload_length, sizeof (payload_length), 0);
+
+    return 0;
+}
+
+
+
+// do we need this?
+static int out_of_turn_client_request(int cfd) {
+    int16_t irrelevant_data;
+    int8_t payload_length;
+    int8_t payload;
+
+    read(cfd, &irrelevant_data, sizeof (irrelevant_data));
+    read(cfd, &payload_length, sizeof (payload_length));
+
+    for(int i = 0; i < payload_length;  i++) {
+        read(cfd, &payload, sizeof (payload));
+    }
+    send_error_code(cfd, GAME_ERROR_ACTION_OUT_OF_TURN);
+    return 0;
+}
+
+
+static int send_error_code(int cfd, int error_code) {
+    int8_t status = error_code;
+    int8_t context = INFORMATION;
+    int8_t payload_length = 0;
+
+    send(cfd, &status, sizeof(status), 0);
+    send(cfd, &context, sizeof(context), 0);
+    send(cfd, &payload_length, sizeof(payload_length), 0);
+}
+
+
+static int send_new_game_code(int cfd, uint32_t uid) {
+    int8_t status = SUCCESS;
+    int8_t context = CONFIRMATION;
+    int8_t payload_length = 4;
+    int32_t payload = uid;
+
+    send(cfd, &status, sizeof(status), 0);
+    send(cfd, &context, sizeof(context), 0);
+    send(cfd, &payload_length, sizeof(payload_length), 0);
+    send(cfd, &payload, sizeof(payload), 0);
+}
+
+static int send_start_ttt_game_code(int cfd_x, int cfd_o) {
+    int8_t status = UPDATE_START_GAME;
+    int8_t context = CONFIRMATION;
+    int8_t payload_length = 0;
+    int8_t payload_x = X;
+    int8_t payload_o = O;
+
+    send(cfd_x, &status, sizeof(status), 0);
+    send(cfd_x, &context, sizeof(context), 0);
+    send(cfd_x, &payload_length, sizeof(payload_length), 0);
+    send(cfd_x, &payload_x, sizeof(payload_x), 0);
+
+    send(cfd_o, &status, sizeof(status), 0);
+    send(cfd_o, &context, sizeof(context), 0);
+    send(cfd_o, &payload_length, sizeof(payload_length), 0);
+    send(cfd_o, &payload_o, sizeof(payload_x), 0);
+}
