@@ -100,8 +100,10 @@ int main() {
                                 // send uid error
                             } else {
                                 // check the game type
-                                if(game_node->TTTGame.game_type == 1) {
+                                if(game_node->game_type == TTT_GAME) {
                                     if (game_node->TTTGame.fd_current_player == cfd) {
+                                        game_node->TTTGame.FSM_data_reads = *received_data;
+                                        game_node->TTTGame.received_move = received_data->payload_first_byte;
                                         mainaroo(&game_node->TTTGame);
                                     } else {
                                         send_error_code(cfd, GAME_ERROR_ACTION_OUT_OF_TURN);
@@ -184,10 +186,10 @@ static int read_data(int cfd, data *client_data){
     };
 
     // read array
-    client_data->uid = byteArray[0];
-    client_data->uid |= byteArray[1] >> 8;
-    client_data->uid |= byteArray[2] >> 16;
-    client_data->uid |= byteArray[3] >> 24;
+    client_data->uid = byteArray[0] << 24;
+    client_data->uid |= byteArray[1] << 16;
+    client_data->uid |= byteArray[2] << 8;
+    client_data->uid |= byteArray[3];
 
     client_data->req_type = byteArray[4];
     client_data->context = byteArray[5];
@@ -228,9 +230,15 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
             newGameEnv.client_o = cfd;
             newGameEnv.fd_current_player = newGameEnv.client_x;
 
+
+
             // set uids
             newGameEnv.client_x_uid = lobby->TTTGame.client_x_uid;
             newGameEnv.client_o_uid = uid;
+            for(int i = 0; i < 9; i++) {
+                newGameEnv.game_board[i] = BLANK_SPACE;
+            }
+
 
             insert_new_ttt_game(&lobby, &newGameEnv);
             print_ttt_collection(&lobby);
@@ -271,8 +279,8 @@ static int send_error_code(int cfd, int error_code) {
 
     unsigned char byte_array[3];
     byte_array[0] = status;
-    byte_array[1] = context >> 8;
-    byte_array[2] = payload_length >> 16;
+    byte_array[1] = context;
+    byte_array[2] = payload_length;
 
     send(cfd, &byte_array, sizeof (byte_array), 0);
 

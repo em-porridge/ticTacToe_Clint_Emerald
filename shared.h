@@ -111,7 +111,7 @@ typedef struct{
 
     // ttt or rps
     int game_type;
-
+    data FSM_data_reads;
     // unique ID
     int32_t client_x_uid;
     int32_t client_o_uid;

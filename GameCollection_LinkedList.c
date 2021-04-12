@@ -32,7 +32,7 @@ int init_lobbies(node **head){
 
     (*head)->TTTGame=ttt_lobby;
 
-    (*head)->game_id = 2;
+    (*head)->game_type = 0;
     (*head)->next = NULL;
 
     return 0;
@@ -63,11 +63,8 @@ int insert_new_ttt_game(node **head, SingleTTTGameEnv *new_env) {
 
     new_TTT_node->TTTGame = *new_env;
 
-    for(int i = 0; i < 9; i++) {
-        new_env->game_board[i] = BLANK_SPACE;
-    }
-
     tmp->next = new_TTT_node;
+
     return 0;
 
 }
@@ -88,7 +85,7 @@ int insert_new_rps_game(node **head, int32_t game_id, int clientOneFD, int clien
     }
 
     new_rsp_node->next = NULL;
-    new_rsp_node->game_id = game_id;
+    new_rsp_node->game_type = 2;
 
 
     SingleRPSGameEnv new_env;
@@ -140,7 +137,7 @@ void delete_link(node **head, int32_t game_id){
     struct node *prev = NULL;
 
     do {
-        if(current->game_id == game_id) {
+        if(current->uid_client_two == game_id || current->uid_client_one == game_id) {
             break;
         }
         prev = current;
@@ -165,20 +162,20 @@ void delete_link(node **head, int32_t game_id){
 }
 
 
-void print_rps_games(node **head) {
-    struct node *current = *head;
-    while(current) {
-        if (current->RPSGame.unique_game_id > 0) {
-            printf(" --- > RPS GAME ID: %u, client one: %d, client two %d \n", current->game_id, current->RPSGame.fd_client_player_one, current->RPSGame.fd_client_player_two);
-        }
-         current = current->next;
-    }
-}
+//void print_rps_games(node **head) {
+//    struct node *current = *head;
+//    while(current) {
+//        if (current->RPSGame.unique_game_id > 0) {
+//            printf(" --- > RPS GAME ID: %u, client one: %d, client two %d \n", current->game_id, current->RPSGame.fd_client_player_one, current->RPSGame.fd_client_player_two);
+//        }
+//         current = current->next;
+//    }
+//}
 
 void print_ttt_collection(node **head) {
     struct node *current = *head;
     while(current) {
-        printf(" --- > TTT GAME ID: %u, client one: %d, client two %d \n", current->game_id, current->TTTGame.client_x, current->TTTGame.client_o);
+        printf(" --- > client one: %d, client two %d \n", current->TTTGame.client_x, current->TTTGame.client_o);
     current = current->next;
     }
 }
@@ -187,31 +184,31 @@ void deinit(node **head){
     return;
 };
 
-SingleTTTGameEnv * execute_ttt_turn(node **head, int32_t game_id_to_find, int8_t requested){
-    struct node *current = head;
-    struct node *tmp;
+//SingleTTTGameEnv * execute_ttt_turn(node **head, int32_t game_id_to_find, int8_t requested){
+//    struct node *current = head;
+//    struct node *tmp;
+//
+//    do{
+//        tmp = current;
+//        current = current ->next;
+//    } while (current -> uid_client_one != game_id_to_find || current->uid_client_two != game_id_to_find);
+//
+//     return &current->TTTGame;
+//
+//}
 
-    do{
-        tmp = current;
-        current = current ->next;
-    } while (current -> game_id != game_id_to_find);
-
-     return &current->TTTGame;
-
-}
-
-SingleRPSGameEnv * execute_rps_turn(node **head, int32_t game_id_to_find, int8_t requested) {
-    struct node *current = *head;
-    struct node *tmp;
-
-    do {
-        tmp = current;
-        current = current->next;
-    } while(current -> game_id != game_id_to_find);
-
-    // todo error check if game goes not exist
-    return &current->RPSGame;
-}
+//SingleRPSGameEnv * execute_rps_turn(node **head, int32_t game_id_to_find, int8_t requested) {
+//    struct node *current = *head;
+//    struct node *tmp;
+//
+//    do {
+//        tmp = current;
+//        current = current->next;
+//    } while(current -> game_id != game_id_to_find);
+//
+//    // todo error check if game goes not exist
+//    return &current->RPSGame;
+//}
 
 //int find_remaining_by_id(rps_node **head, int cfd);
 //

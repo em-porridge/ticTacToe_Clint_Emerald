@@ -63,6 +63,7 @@ static int validate_input(Environment *env){
         return WAIT;
     }
 
+    // error
     return TURNOVER;
 }
 
@@ -71,6 +72,7 @@ static int invalid_move(Environment *env){
     SingleTTTGameEnv *game_env;
     game_env = (SingleTTTGameEnv *) env;
     send_decline_move_code(env);
+
     return VALIDATE;
 }
 
@@ -80,6 +82,7 @@ static int accepted_move(Environment *env){
     game_env = (SingleTTTGameEnv *) env;
 
     send_accepted_move_code(env);
+    print_board(env);
     switch_players(env);
     send_update_client_code(env);
     return FSM_EXIT;
@@ -100,6 +103,7 @@ static bool check_board(Environment *env){
     game_env = (SingleTTTGameEnv *) env;
 
     if(game_env->game_board[game_env->received_move] == BLANK_SPACE){
+
         game_env->game_board[game_env->received_move] = game_env->fd_current_player;
         return true;
     } else {
@@ -129,11 +133,9 @@ static void switch_players(Environment *env){
     game_env->play_count++;
 
     if(game_env->fd_current_player == game_env->client_x) {
-        int swap_x = game_env->client_o;
-        game_env->fd_current_player = swap_x;
+        game_env->fd_current_player = game_env->client_o;
     } else if(game_env->fd_current_player == game_env->client_o) {
-        int swap_o = game_env->client_x;
-        game_env->fd_current_player = swap_o;
+        game_env->fd_current_player = game_env->client_x;
     }
 }
 
@@ -233,15 +235,19 @@ static int send_update_client_code(Environment *env){
     SingleTTTGameEnv *game_env;
     game_env = (SingleTTTGameEnv *) env;
 
-    int8_t status = UPDATE;
-    int8_t context = UPDATE_MOVE_MADE;
-    int8_t payload_length = 1;
-    int8_t payload = game_env->received_move;
+    game_env->FSM_data_reads.req_type = UPDATE;
+    game_env->FSM_data_reads.context = UPDATE_MOVE_MADE;
+    game_env->FSM_data_reads.payload_length = 1;
+    game_env->FSM_data_reads.payload_first_byte = game_env->received_move;
 
-    send(game_env->fd_current_player, &status, sizeof (status), 0);
-    send(game_env->fd_current_player, &context, sizeof (context), 0);
-    send(game_env->fd_current_player, &payload_length, sizeof (payload_length), 0);
-    send(game_env->fd_current_player, &payload, sizeof (payload), 0);
+    unsigned char byte_array_update[4];
+
+    byte_array_update[0] = game_env->FSM_data_reads.req_type;
+    byte_array_update[1] = game_env->FSM_data_reads.context;
+    byte_array_update[2] = game_env->FSM_data_reads.payload_length;
+    byte_array_update[3] = game_env->received_move;
+
+    send(game_env->fd_current_player, &byte_array_update, sizeof (byte_array_update), 0);
 
     return 0;
 }
@@ -251,13 +257,17 @@ static int send_accepted_move_code(Environment *env){
     SingleTTTGameEnv *game_env;
     game_env = (SingleTTTGameEnv *) env;
 
-    uint8_t status = SUCCESS;
-    uint8_t context = INFORMATION;
-    uint8_t payload_size = 0;
+    game_env->FSM_data_reads.req_type = SUCCESS;
+    game_env->FSM_data_reads.context = INFORMATION;
+    game_env->FSM_data_reads.payload_length = 0;
 
-    send(game_env->fd_current_player, &status, sizeof (status), 0);
-    send(game_env->fd_current_player, &context, sizeof (context), 0);
-    send(game_env->fd_current_player, &payload_size, sizeof (payload_size), 0);
+    unsigned char byte_array_update[3];
+
+    byte_array_update[0] = game_env->FSM_data_reads.req_type;
+    byte_array_update[1] = game_env->FSM_data_reads.context;
+    byte_array_update[2] = game_env->FSM_data_reads.payload_length;
+
+    send(game_env->fd_current_player, &byte_array_update, sizeof (byte_array_update), 0);
 }
 
 
@@ -265,14 +275,17 @@ static int send_decline_move_code(Environment *env){
     SingleTTTGameEnv *game_env;
     game_env = (SingleTTTGameEnv *) env;
 
-    uint8_t status = GAME_ERROR_INVALID_ACTION;
-    uint8_t context = INFORMATION;
-    uint8_t payload_length = 0;
+    game_env->FSM_data_reads.req_type = GAME_ERROR_INVALID_ACTION;
+    game_env->FSM_data_reads.context = INFORMATION;
+    game_env->FSM_data_reads.payload_length = 0;
 
-    send(game_env->fd_current_player, &status, sizeof (status), 0);
-    send(game_env->fd_current_player, &context, sizeof (context), 0);
-    send(game_env->fd_current_player, &payload_length, sizeof (payload_length), 0);
+    unsigned char byte_array_update[3];
 
+    byte_array_update[0] = game_env->FSM_data_reads.req_type;
+    byte_array_update[1] = game_env->FSM_data_reads.context;
+    byte_array_update[2] = game_env->FSM_data_reads.payload_length;
+
+    send(game_env->fd_current_player, &byte_array_update, sizeof (byte_array_update), 0);
     return 0;
 }
 
@@ -280,23 +293,22 @@ static int send_tie_game(Environment *env){
     SingleTTTGameEnv *game_env;
     game_env = (SingleTTTGameEnv *) env;
 
-    uint8_t status = UPDATE;
-    uint8_t context = UPDATE_END_OF_GAME;
-    uint8_t payload_length = 2;
-    uint8_t tie_code = PL_TIE;
-    uint8_t final_move = game_env->received_move;
+    game_env->FSM_data_reads.req_type = UPDATE;
+    game_env->FSM_data_reads.context = UPDATE_END_OF_GAME;
+    game_env->FSM_data_reads.payload_length = 2;
+    game_env->FSM_data_reads.payload_first_byte = PL_TIE;
+    game_env->FSM_data_reads.payload_second_byte = game_env ->received_move;
 
-    send(game_env->client_x, &status, sizeof (status), 0);
-    send(game_env->client_x, &context, sizeof (context), 0);
-    send(game_env->client_x, &payload_length, sizeof (payload_length), 0);
-    send(game_env->client_x, &tie_code, sizeof (tie_code), 0);
-    send(game_env->client_x, &final_move, sizeof (final_move), 0);
+    unsigned char byte_array_update[6];
 
-    send(game_env->client_o, &status, sizeof (status), 0);
-    send(game_env->client_o, &context, sizeof (context), 0);
-    send(game_env->client_o, &payload_length, sizeof (payload_length), 0);
-    send(game_env->client_o, &tie_code, sizeof (tie_code), 0);
-    send(game_env->client_o, &final_move, sizeof (final_move), 0);
+    byte_array_update[0] = game_env->FSM_data_reads.req_type;
+    byte_array_update[1] = game_env->FSM_data_reads.context;
+    byte_array_update[2] = game_env->FSM_data_reads.payload_length;
+    byte_array_update[3] = game_env->FSM_data_reads.payload_first_byte;
+    byte_array_update[4] = game_env->FSM_data_reads.payload_second_byte;
+
+    send(game_env->client_x, &byte_array_update, sizeof (byte_array_update), 0);
+    send(game_env->client_o, &byte_array_update, sizeof (byte_array_update), 0);
 
     return 0;
 }
@@ -305,40 +317,36 @@ static int send_win_loss_game(Environment *env) {
     SingleTTTGameEnv *game_env;
     game_env = (SingleTTTGameEnv *) env;
 
-    uint8_t status = UPDATE;
-    uint8_t context = UPDATE_END_OF_GAME;
-    uint8_t payload_length = 2;
-    uint8_t winner_code = PL_WIN;
-    uint8_t loser_code_boo = PL_LOSS;
-    uint8_t final_move = game_env->received_move;
+    game_env->FSM_data_reads.req_type = UPDATE;
+    game_env->FSM_data_reads.context = UPDATE_END_OF_GAME;
+    game_env->FSM_data_reads.payload_length = 2;
+    game_env->FSM_data_reads.payload_first_byte = PL_WIN;
+    game_env->FSM_data_reads.payload_second_byte = PL_LOSS;
+    game_env->FSM_data_reads.payload_third_byte = game_env ->received_move;
 
+    unsigned char byte_array_update_winner[6];
+    unsigned char byte_array_update_loser[6];
+
+    byte_array_update_winner[0] = game_env->FSM_data_reads.req_type;
+    byte_array_update_winner[1] = game_env->FSM_data_reads.context;
+    byte_array_update_winner[2] = game_env->FSM_data_reads.payload_length;
+    byte_array_update_winner[3] = game_env->FSM_data_reads.payload_first_byte;
+    byte_array_update_winner[4] = game_env->FSM_data_reads.payload_third_byte;
+
+    byte_array_update_loser[0] = game_env->FSM_data_reads.req_type;
+    byte_array_update_loser[1] = game_env->FSM_data_reads.context;
+    byte_array_update_loser[2] = game_env->FSM_data_reads.payload_length;
+    byte_array_update_loser[3] = game_env->FSM_data_reads.payload_second_byte;
+    byte_array_update_loser[4] = game_env->FSM_data_reads.payload_third_byte;
 
     if(game_env->client_x == game_env->winner) {
         // send win to x
-        send(game_env->client_x, &status, sizeof (status), 0);
-        send(game_env->client_x, &context, sizeof (context), 0);
-        send(game_env->client_x, &payload_length, sizeof (payload_length), 0);
-        send(game_env->client_x, &winner_code, sizeof (winner_code), 0);
-        send(game_env->client_x, &final_move, sizeof (&game_env->received_move), 0);
-
-        send(game_env->client_o, &status, sizeof (status), 0);
-        send(game_env->client_o, &context, sizeof (context), 0);
-        send(game_env->client_o, &payload_length, sizeof (payload_length), 0);
-        send(game_env->client_o, &loser_code_boo, sizeof (winner_code), 0);
-        send(game_env->client_o, &final_move, sizeof (&final_move), 0);
+        send(game_env->client_x, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
+        send(game_env->client_o, &byte_array_update_loser, sizeof (byte_array_update_winner), 0);
     } else if(game_env->client_o == game_env->winner) {
         // send win to o
-        send(game_env->client_x, &status, sizeof (status), 0);
-        send(game_env->client_x, &context, sizeof (context), 0);
-        send(game_env->client_x, &payload_length, sizeof (payload_length), 0);
-        send(game_env->client_x, &loser_code_boo, sizeof (winner_code), 0);
-        send(game_env->client_x, &final_move, sizeof (final_move), 0);
-
-        send(game_env->client_o, &status, sizeof (status), 0);
-        send(game_env->client_o, &context, sizeof (context), 0);
-        send(game_env->client_o, &payload_length, sizeof (payload_length), 0);
-        send(game_env->client_o, &winner_code, sizeof (winner_code), 0);
-        send(game_env->client_o, &final_move, sizeof (final_move), 0);
+        send(game_env->client_x, &byte_array_update_loser, sizeof (byte_array_update_loser), 0);
+        send(game_env->client_o, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
     } else {
         // todo server error
     }
