@@ -50,16 +50,16 @@ static int validate_input(Environment *env){
 
     if(game_env->received_move >= 0 && game_env->received_move <= 8) {
         if(check_board(env)) {
-            accepted_move(env);
+//            accepted_move(env);
             if(check_win(env)){
-                return TURNOVER;
+                return GAMEOVER;
             }
         } else {
             invalid_move(env);
             return WAIT;
         }
     } else {
-        send_decline_move_code(env);
+        invalid_move(env);
         return WAIT;
     }
 
@@ -118,7 +118,7 @@ static void print_board(Environment *env){
 
     for(int i = 0 ; i < 9; i++){
         if(game_env->game_board[i] != BLANK_SPACE){
-            printf("| %c |", game_env->game_board[i]);
+            printf("| %d |", game_env->game_board[i]);
         } else {
             printf("|   |");
         }
@@ -131,11 +131,12 @@ static void switch_players(Environment *env){
     game_env = (SingleTTTGameEnv *) env;
 
     game_env->play_count++;
-
     if(game_env->fd_current_player == game_env->client_x) {
         game_env->fd_current_player = game_env->client_o;
     } else if(game_env->fd_current_player == game_env->client_o) {
         game_env->fd_current_player = game_env->client_x;
+    } else {
+        // i dunno
     }
 }
 
@@ -266,6 +267,7 @@ static int send_accepted_move_code(Environment *env){
     byte_array_update[0] = game_env->FSM_data_reads.req_type;
     byte_array_update[1] = game_env->FSM_data_reads.context;
     byte_array_update[2] = game_env->FSM_data_reads.payload_length;
+
 
     send(game_env->fd_current_player, &byte_array_update, sizeof (byte_array_update), 0);
 }

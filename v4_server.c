@@ -74,14 +74,13 @@ int main() {
 
                     if (num_read < 1) {
                         printf("++++++ Disconnect +++++ \n");
+
                         node * disconnected_node = return_link_by_uid(&game_lobby, received_data->uid);
 
                         if(disconnected_node->TTTGame.client_o == cfd) {
                             handle_client_disconnect(cfd);
-
                         } else if (disconnected_node->TTTGame.client_x == cfd) {
                             handle_client_disconnect(cfd);
-
                         } else {
                             // todo update with RPS
                         }
@@ -266,9 +265,13 @@ static int handle_client_disconnect(int cfd) {
     int8_t context = UPDATE_DISCONNECT;
     int8_t payload_length = 0;
 
-    send(cfd, &status, sizeof (status), 0);
-    send(cfd, &context, sizeof (context), 0);
-    send(cfd, &payload_length, sizeof (payload_length), 0);
+    unsigned char byte_array[3];
+
+    byte_array[0] = status;
+    byte_array[1] = context;
+    byte_array[2] = payload_length;
+
+    send(cfd, &byte_array, sizeof (byte_array), 0);
     return 0;
 }
 
