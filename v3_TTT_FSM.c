@@ -307,7 +307,7 @@ static int send_tie_game(Environment *env){
     byte_array_update[3] = game_env->FSM_data_reads.payload_first_byte;
     byte_array_update[4] = game_env->FSM_data_reads.payload_second_byte;
 
-    send_accepted_move_code(env); 
+    send_accepted_move_code(env);
     send(game_env->client_x, &byte_array_update, sizeof (byte_array_update), 0);
     send(game_env->client_o, &byte_array_update, sizeof (byte_array_update), 0);
 
