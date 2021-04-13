@@ -13,6 +13,7 @@
 
 #include "fsm.h"
 #include "v3_TTT_FSM.h"
+#include "RPS_FSM.h"
 #include "GameCollection_LinkedList.h"
 #include "shared.h"
 
@@ -77,13 +78,13 @@ int main() {
 
                         node * disconnected_node = return_link_by_uid(&game_lobby, received_data->uid);
 
-                        if(disconnected_node->TTTGame.client_o == cfd) {
-                            handle_client_disconnect(cfd);
-                        } else if (disconnected_node->TTTGame.client_x == cfd) {
-                            handle_client_disconnect(cfd);
-                        } else {
-                            // todo update with RPS
-                        }
+//                        if(disconnected_node->TTTGame.client_o == cfd) {
+//                            handle_client_disconnect(cfd);
+//                        } else if (disconnected_node->TTTGame.client_x == cfd) {
+//                            handle_client_disconnect(cfd);
+//                        } else {
+//                            // todo update with RPS
+//                        }
 
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
@@ -94,7 +95,6 @@ int main() {
                             handle_new_connection(game_lobby, cfd, unique_game_id, received_data->payload_second_byte);
                         } else {
                             node * game_node = return_link_by_uid(&game_lobby, received_data->uid);
-                            // if return null node
                             if(game_node == NULL) {
                                 // send uid error
                             } else {
@@ -104,14 +104,16 @@ int main() {
                                         game_node->TTTGame.FSM_data_reads = *received_data;
                                         game_node->TTTGame.received_move = received_data->payload_first_byte;
                                         mainaroo(&game_node->TTTGame);
+                                        // reset data here
                                     } else {
                                         send_error_code(cfd, GAME_ERROR_ACTION_OUT_OF_TURN);
                                     }
-                                    if(game_node->TTTGame.game_over) {
-                                        // disconnect??
-                                    }
                                 } else {
-                                    // run RPS
+                                    game_node->RPSGame.fd_current_client = cfd;
+                                    game_node->RPSGame.move_received = received_data->payload_first_byte;
+                                    mainzees(&game_node->RPSGame);
+                                    // send to FSM
+
                                 }
                             }
 
@@ -228,16 +230,13 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
             newGameEnv.client_x = lobby->TTTGame.client_x;
             newGameEnv.client_o = cfd;
             newGameEnv.fd_current_player = newGameEnv.client_x;
-
-
-
+            newGameEnv.game_over = false;
             // set uids
             newGameEnv.client_x_uid = lobby->TTTGame.client_x_uid;
             newGameEnv.client_o_uid = uid;
             for(int i = 0; i < 9; i++) {
                 newGameEnv.game_board[i] = BLANK_SPACE;
             }
-
 
             insert_new_ttt_game(&lobby, &newGameEnv);
             print_ttt_collection(&lobby);
@@ -259,8 +258,14 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
     return -1;
 }
 
-// todo update
+
+static int handle_client_quiting(int cfd) {
+
+
+}
+
 static int handle_client_disconnect(int cfd) {
+
     int8_t status = UPDATE;
     int8_t context = UPDATE_DISCONNECT;
     int8_t payload_length = 0;

@@ -62,8 +62,6 @@ static int validate_input(Environment *env){
         invalid_move(env);
         return WAIT;
     }
-
-    // error
     return TURNOVER;
 }
 
@@ -343,10 +341,12 @@ static int send_win_loss_game(Environment *env) {
 
     if(game_env->client_x == game_env->winner) {
         // send win to x
+        send_accepted_move_code(env);
         send(game_env->client_x, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
         send(game_env->client_o, &byte_array_update_loser, sizeof (byte_array_update_winner), 0);
     } else if(game_env->client_o == game_env->winner) {
         // send win to o
+        send_accepted_move_code(env);
         send(game_env->client_x, &byte_array_update_loser, sizeof (byte_array_update_loser), 0);
         send(game_env->client_o, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
     } else {

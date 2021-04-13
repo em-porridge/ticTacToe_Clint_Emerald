@@ -86,23 +86,23 @@ typedef struct {
     Environment common;
     // unique ID
 
-    int32_t unique_game_id;
+    int32_t unique_game_id_player_one;
+    int32_t unique_game_id_player_two;
 
     data FSM_data_reads;
 
     int fd_client_player_one;
     int fd_client_player_two;
+    int fd_current_client;
 
     int8_t client_one_play;
     int8_t client_two_play;
+    int8_t move_received;
 
     bool game_over;
 
     // managing req/responses
-    int8_t received_move;
-    int8_t response_type;
-    int8_t response_game_state;
-    int8_t winner;
+    int winner;
 } SingleRPSGameEnv;
 
 /** A singular TicTacToe game environment **/
