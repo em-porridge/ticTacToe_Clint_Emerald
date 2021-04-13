@@ -234,6 +234,7 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
             // set uids
             newGameEnv.client_x_uid = lobby->TTTGame.client_x_uid;
             newGameEnv.client_o_uid = uid;
+            newGameEnv.play_count = 0;
             for(int i = 0; i < 9; i++) {
                 newGameEnv.game_board[i] = BLANK_SPACE;
             }
@@ -247,6 +248,7 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
         } else if(lobby->TTTGame.client_x == 0) {
             lobby->TTTGame.client_x = cfd;
             lobby->TTTGame.client_x_uid = uid;
+
             send_new_game_code(cfd, uid);
             return 0;
         }

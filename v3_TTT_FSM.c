@@ -146,7 +146,7 @@ static bool check_win(Environment *env){
         send_win_loss_game(env);
         printf("Game Ending Move! \n");
         return true;
-    } else if (game_env->play_count == 9){
+    } else if (game_env->play_count == 8){
         send_tie_game(env);
         printf("Tie Game! \n");
         return true;

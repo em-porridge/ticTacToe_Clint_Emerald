@@ -61,11 +61,8 @@ int insert_new_ttt_game(node **head, SingleTTTGameEnv *new_env) {
     new_TTT_node->game_type = 1;
     new_TTT_node->uid_client_one = new_env->client_x_uid;
     new_TTT_node->uid_client_two = new_env->client_o_uid;
-
     new_TTT_node->TTTGame = *new_env;
-
     tmp->next = new_TTT_node;
-
     return 0;
 
 }
