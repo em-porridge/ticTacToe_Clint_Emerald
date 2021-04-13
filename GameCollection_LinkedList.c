@@ -17,7 +17,8 @@ int init_lobbies(node **head){
 
     // A Rock Paper Scissors Lobby
     SingleRPSGameEnv rsp_lobby;
-    rsp_lobby.unique_game_id = 2;
+    rsp_lobby.unique_game_id_player_one = 0;
+    rsp_lobby.unique_game_id_player_two = 0;
     rsp_lobby.fd_client_player_one = 0;
     rsp_lobby.fd_client_player_two = 0;
     (*head)->RPSGame = rsp_lobby;
@@ -69,7 +70,7 @@ int insert_new_ttt_game(node **head, SingleTTTGameEnv *new_env) {
 
 }
 
-int insert_new_rps_game(node **head, int32_t game_id, int clientOneFD, int clientTwoFD){
+int insert_new_rps_game(node **head, SingleRPSGameEnv *new_env){
     struct node *current = *head;
     struct node *tmp;
 
@@ -87,13 +88,11 @@ int insert_new_rps_game(node **head, int32_t game_id, int clientOneFD, int clien
     new_rsp_node->next = NULL;
     new_rsp_node->game_type = 2;
 
+    new_rsp_node->uid_client_one = new_env->unique_game_id_player_one;
+    new_rsp_node->uid_client_two = new_env->unique_game_id_player_two;
 
-    SingleRPSGameEnv new_env;
-    new_env.unique_game_id = game_id;
-    new_env.fd_client_player_one = clientOneFD;
-    new_env.fd_client_player_two = clientTwoFD;
-
-    // any other set up? not sure yet
+    new_rsp_node->RPSGame = *new_env;
+    tmp->next = new_rsp_node;
 
 }
 
@@ -119,7 +118,9 @@ node *return_link_by_uid(node ** head, uint32_t uid){
 
 void reset_rps_lobby(node **head){
     struct node *current = *head;
-    current->RPSGame.unique_game_id = 2;
+    current->RPSGame.unique_game_id_player_one = 0;
+    current->RPSGame.unique_game_id_player_two = 0;
+//    current->RPSGame.unique_game_id = 2;
     current->RPSGame.fd_client_player_two = 0;
     current->RPSGame.fd_client_player_one = 0;
 }

@@ -7,14 +7,14 @@
 
 typedef enum
 {
-    INIT,
-    WAIT, // 4
-    VALIDATE, // 5
-    TURNOVER, // 6
-    GAMEOVER, // 7
-    ERROR, // 8
+    RPS_INIT,
+    RPS_WAIT, // 4
+    RPS_VALIDATE, // 5
+    RPS_TURNOVER, // 6
+    RPS_GAMEOVER, // 7
+    RPS_ERROR, // 8
 
-} States;
+} RPS_States;
 
 
 int mainzees(SingleRPSGameEnv *env);

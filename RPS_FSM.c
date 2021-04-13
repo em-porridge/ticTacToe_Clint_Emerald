@@ -16,13 +16,13 @@ int mainzees(SingleRPSGameEnv *env)
 {
     StateTransition transitions[] =
             {
-                    {FSM_INIT, VALIDATE, &validate_RPS_input},
-                    {VALIDATE, WAIT, &invalid_RPS_move},
-                    {VALIDATE, GAMEOVER, &game_RPS_over},
-                    {VALIDATE, TURNOVER, &accepted_RPS_move},
-                    {WAIT, VALIDATE, &validate_RPS_input},
-                    {TURNOVER, FSM_EXIT, &RPS_terminate},
-                    {GAMEOVER, FSM_EXIT, &RPS_terminate}
+                    {FSM_INIT, RPS_VALIDATE, &validate_RPS_input},
+                    {RPS_VALIDATE, RPS_WAIT, &invalid_RPS_move},
+                    {RPS_VALIDATE, RPS_GAMEOVER, &game_RPS_over},
+                    {RPS_VALIDATE, RPS_TURNOVER, &accepted_RPS_move},
+                    {RPS_WAIT, RPS_VALIDATE, &validate_RPS_input},
+                    {RPS_TURNOVER, FSM_EXIT, &RPS_terminate},
+                    {RPS_GAMEOVER, FSM_EXIT, &RPS_terminate}
             };
 
     int code;
@@ -30,7 +30,7 @@ int mainzees(SingleRPSGameEnv *env)
     int end_state;
 
     start_state = FSM_INIT;
-    end_state   = VALIDATE;
+    end_state   = RPS_VALIDATE;
 
     code = fsm_run((Environment *)env, &start_state, &end_state, transitions);
 
@@ -51,12 +51,12 @@ static int validate_RPS_input(Environment *env){
     if(!check_player_gone(env)) {
         if(check_RPS_move_valid(env)){
             if(check_RPS_game_over(env)){
-                return GAMEOVER;
+                return RPS_GAMEOVER;
             } else {
-                return TURNOVER;
+                return RPS_TURNOVER;
             }
         } else {
-            return WAIT;
+            return RPS_WAIT;
         }
     }
     // read

@@ -21,7 +21,7 @@ typedef struct node   {
 
 int init_lobbies(node **head);
 
-int insert_new_rps_game(node **head, int32_t game_id, int clientOneFD, int clientTwoFD);
+int insert_new_rps_game(node **head, SingleRPSGameEnv* new_env);
 int insert_new_ttt_game(node **head, SingleTTTGameEnv* new_env);
 
 void reset_rps_lobby(node **head);
