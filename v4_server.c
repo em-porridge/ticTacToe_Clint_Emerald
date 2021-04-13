@@ -27,6 +27,7 @@ static int handle_client_disconnect(int cfd);
 static int send_error_code(int cfd, int error_code);
 static int send_new_game_code(int cfd, uint32_t uid);
 static int send_start_ttt_game_code(int cfd_x, int cfd_o);
+static int send_start_rps_game_code(int cfd_one, int cfd_two);
 
 int main() {
     fd_set rfds, ready_sockets;
@@ -44,6 +45,8 @@ int main() {
     unique_game_id = 3;
 
     data *received_data;
+    received_data->uid = 0;
+
 
     FD_ZERO(&rfds);
     FD_SET((u_int) sfd, &rfds);
@@ -91,7 +94,6 @@ int main() {
 
                     } else {
                         if(received_data->uid == 0) {
-                            printf("newGame");
                             handle_new_connection(game_lobby, cfd, unique_game_id, received_data->payload_second_byte);
                         } else {
                             node * game_node = return_link_by_uid(&game_lobby, received_data->uid);
@@ -186,11 +188,18 @@ static int read_data(int cfd, data *client_data){
         return -1;
     };
 
-    // read array
+
+
+//     read array
     client_data->uid = byteArray[0] << 24;
     client_data->uid |= byteArray[1] << 16;
     client_data->uid |= byteArray[2] << 8;
     client_data->uid |= byteArray[3];
+//
+//    client_data->uid = byteArray[0];
+//    client_data->uid |= byteArray[1] >> 8;
+//    client_data->uid |= byteArray[2] >> 16;
+//    client_data->uid |= byteArray[3] >> 24;
 
     client_data->req_type = byteArray[4];
     client_data->context = byteArray[5];
@@ -222,10 +231,8 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
     if (game_type == 1) {
         // if there is already a client in the lobby
         if (lobby->TTTGame.client_x > 0) {
-
             // assign new uid
             send_new_game_code(cfd, uid);
-
             SingleTTTGameEnv newGameEnv;
             newGameEnv.client_x = lobby->TTTGame.client_x;
             newGameEnv.client_o = cfd;
@@ -238,10 +245,8 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
             for(int i = 0; i < 9; i++) {
                 newGameEnv.game_board[i] = BLANK_SPACE;
             }
-
             insert_new_ttt_game(&lobby, &newGameEnv);
             print_ttt_collection(&lobby);
-
             send_start_ttt_game_code(newGameEnv.client_x, newGameEnv.client_o);
             reset_ttt_lobby(&lobby);
             return 0;
@@ -253,7 +258,29 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
             return 0;
         }
     } else if (game_type == 2){
-        // its a RPS game
+        if(lobby->RPSGame.fd_client_player_one > 0) {
+            send_new_game_code(cfd, uid);
+            SingleRPSGameEnv newGameEnv;
+            newGameEnv.fd_client_player_one = lobby->RPSGame.fd_client_player_one;
+            newGameEnv.fd_client_player_two = cfd;
+
+            newGameEnv.unique_game_id_player_one = lobby->RPSGame.unique_game_id_player_one;
+            newGameEnv.unique_game_id_player_two = uid;
+
+            insert_new_rps_game(&lobby, &newGameEnv);
+            send_start_rps_game_code(newGameEnv.fd_client_player_one, newGameEnv.fd_client_player_one);
+            reset_rps_lobby(&lobby);
+
+            return 0;
+        } else if(lobby->RPSGame.fd_client_player_one == 0) {
+            lobby->RPSGame.fd_client_player_one = cfd;
+            lobby->RPSGame.unique_game_id_player_one = uid;
+
+            send_new_game_code(cfd, uid);
+            return 0;
+        } else {
+            // dunno
+        }
     } else {
         // error
     }
@@ -317,6 +344,24 @@ static int send_new_game_code(int cfd, uint32_t uid) {
     send(cfd, &byte_array, sizeof (byte_array), 0);
 
     return 0;
+}
+
+
+static int send_start_rps_game_code(int cfd_one, int cfd_two) {
+
+    uint8_t status = UPDATE;
+    uint8_t context = UPDATE_START_GAME;
+    uint8_t payload_length = 0;
+
+    unsigned char byte_array_play[4];
+
+    byte_array_play[0] = status;
+    byte_array_play[1] = context;
+    byte_array_play[2] = payload_length;
+
+    send(cfd_one, &byte_array_play, sizeof (byte_array_play), 0);
+    send(cfd_two, &byte_array_play, sizeof (byte_array_play), 0);
+
 }
 
 static int send_start_ttt_game_code(int cfd_x, int cfd_o) {
