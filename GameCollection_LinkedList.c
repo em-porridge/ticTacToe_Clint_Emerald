@@ -112,6 +112,18 @@ node *return_link_by_uid(node ** head, uint32_t uid){
     }
 }
 
+node* return_link_by_cfd(node ** head, int fd) {
+    struct node * current = *head;
+    struct node * tmp;
+
+    do {
+        tmp = current;
+        current = current->next;
+    } while ((tmp->TTTGame.client_x != fd || tmp->TTTGame.client_o != fd || tmp->RPSGame.fd_client_player_one || tmp->RPSGame.fd_client_player_two) && current);
+
+    return tmp;
+}
+
 
 void reset_rps_lobby(node **head){
     struct node *current = *head;
@@ -160,16 +172,6 @@ void delete_link(node **head, int32_t game_id){
 }
 
 
-//void print_rps_games(node **head) {
-//    struct node *current = *head;
-//    while(current) {
-//        if (current->RPSGame.unique_game_id > 0) {
-//            printf(" --- > RPS GAME ID: %u, client one: %d, client two %d \n", current->game_id, current->RPSGame.fd_client_player_one, current->RPSGame.fd_client_player_two);
-//        }
-//         current = current->next;
-//    }
-//}
-
 void print_ttt_collection(node **head) {
     struct node *current = *head;
     while(current) {
@@ -182,32 +184,3 @@ void deinit(node **head){
     return;
 };
 
-//SingleTTTGameEnv * execute_ttt_turn(node **head, int32_t game_id_to_find, int8_t requested){
-//    struct node *current = head;
-//    struct node *tmp;
-//
-//    do{
-//        tmp = current;
-//        current = current ->next;
-//    } while (current -> uid_client_one != game_id_to_find || current->uid_client_two != game_id_to_find);
-//
-//     return &current->TTTGame;
-//
-//}
-
-//SingleRPSGameEnv * execute_rps_turn(node **head, int32_t game_id_to_find, int8_t requested) {
-//    struct node *current = *head;
-//    struct node *tmp;
-//
-//    do {
-//        tmp = current;
-//        current = current->next;
-//    } while(current -> game_id != game_id_to_find);
-//
-//    // todo error check if game goes not exist
-//    return &current->RPSGame;
-//}
-
-//int find_remaining_by_id(rps_node **head, int cfd);
-//
-//SingleRPSGameEnv * rematch(rps_node **head, int game_id);

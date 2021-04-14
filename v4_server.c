@@ -23,6 +23,7 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
 
 static int read_data(int cfd, data *client_data);
 
+static int client_disconnect(node *lobby, int cfd);
 static int handle_client_disconnect(int cfd);
 static int send_error_code(int cfd, int error_code);
 static int send_new_game_code(int cfd, uint32_t uid);
@@ -33,7 +34,7 @@ int main() {
     fd_set rfds, ready_sockets;
     struct sockaddr_in addr, cliaddr;
     int retval, game_id;
-    char buffer[1024];
+    unsigned char buffer[1024];
     uint32_t unique_game_id;
 
     int sfd = prepare_tcp_listening_socket(&addr);
@@ -44,9 +45,7 @@ int main() {
     init_lobbies(&game_lobby);
     unique_game_id = 3;
 
-    data *received_data;
-    received_data->uid = 0;
-
+    data *received_data = malloc(sizeof *received_data);
 
     FD_ZERO(&rfds);
     FD_SET((u_int) sfd, &rfds);
@@ -78,17 +77,7 @@ int main() {
 
                     if (num_read < 1) {
                         printf("++++++ Disconnect +++++ \n");
-
-                        node * disconnected_node = return_link_by_uid(&game_lobby, received_data->uid);
-
-//                        if(disconnected_node->TTTGame.client_o == cfd) {
-//                            handle_client_disconnect(cfd);
-//                        } else if (disconnected_node->TTTGame.client_x == cfd) {
-//                            handle_client_disconnect(cfd);
-//                        } else {
-//                            // todo update with RPS
-//                        }
-
+                        client_disconnect(game_lobby, cfd);
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
 
@@ -123,6 +112,19 @@ int main() {
                         }
                     }
                 }
+            } else if (FD_ISSET(udpfd, &ready_sockets)){
+
+                socklen_t len = sizeof (cliaddr);
+                bzero(buffer, sizeof (buffer));
+                ssize_t n;
+
+                n= recvfrom(udpfd, buffer, sizeof (buffer), 0, (struct sockaddr*)&cliaddr, &len);
+                printf("UID from UDP %u \n", buffer[0]);
+
+//                node *check_pair = return_link_by_uid(&game_lobby, buffer[0]);
+//                sendto(udpfd, buffer, sizeof (buffer), 0, (struct sockaddr*)&cliaddr, len);
+//                printf("SIZE OF AUDIO : %d\n", buffer);
+
             }
         }
     }
@@ -182,25 +184,24 @@ int prepare_upd_socket(struct sockaddr_in *addr){
 
 
 static int read_data(int cfd, data *client_data){
-    char byteArray[256];
+    uint8_t byteArray[256];
 
     if(recv(cfd, &byteArray, sizeof (byteArray), 0) == 0) {
         return -1;
     };
-
-
-
 //     read array
-    client_data->uid = byteArray[0] << 24;
-    client_data->uid |= byteArray[1] << 16;
-    client_data->uid |= byteArray[2] << 8;
-    client_data->uid |= byteArray[3];
+//    client_data->uid = byteArray[0] << 24;
+//    client_data->uid |= byteArray[1] << 16;
+//    client_data->uid |= byteArray[2] << 8;
+//    client_data->uid |= byteArray[3];
 //
 //    client_data->uid = byteArray[0];
 //    client_data->uid |= byteArray[1] >> 8;
 //    client_data->uid |= byteArray[2] >> 16;
 //    client_data->uid |= byteArray[3] >> 24;
 
+
+    client_data->uid = htonl(*(uint32_t*)byteArray);
     client_data->req_type = byteArray[4];
     client_data->context = byteArray[5];
     client_data->payload_length = byteArray[6];
@@ -306,6 +307,7 @@ static int handle_client_disconnect(int cfd) {
     byte_array[2] = payload_length;
 
     send(cfd, &byte_array, sizeof (byte_array), 0);
+    close(cfd);
     return 0;
 }
 
@@ -349,6 +351,10 @@ static int send_new_game_code(int cfd, uint32_t uid) {
 
 static int send_start_rps_game_code(int cfd_one, int cfd_two) {
 
+    if(cfd_two == cfd_one) {
+        return -1;
+    }
+
     uint8_t status = UPDATE;
     uint8_t context = UPDATE_START_GAME;
     uint8_t payload_length = 0;
@@ -361,7 +367,7 @@ static int send_start_rps_game_code(int cfd_one, int cfd_two) {
 
     send(cfd_one, &byte_array_play, sizeof (byte_array_play), 0);
     send(cfd_two, &byte_array_play, sizeof (byte_array_play), 0);
-
+    return 0;
 }
 
 static int send_start_ttt_game_code(int cfd_x, int cfd_o) {
@@ -389,6 +395,34 @@ static int send_start_ttt_game_code(int cfd_x, int cfd_o) {
     send(cfd_x, &byte_array_x, sizeof (byte_array_x), 0);
 }
 
+static int client_disconnect(node *lobby, int cfd){
+    // check lobbies
+    if(lobby->RPSGame.fd_client_player_one == cfd) {
+        reset_rps_lobby(&lobby);
+    } if (lobby->TTTGame.client_x == cfd) {
+        reset_ttt_lobby(&lobby);
+    } else {
+        node * disconnect = return_link_by_cfd(&lobby, cfd);
+        if (disconnect == NULL ) {
+            // do nothing??
+        } else {
+            if(disconnect->game_type == 1 ) {
+                if(disconnect->TTTGame.client_x == cfd) {
+                    handle_client_disconnect(disconnect->TTTGame.client_o);
+                    // delete node
+                } else {
+                    handle_client_disconnect(disconnect->TTTGame.client_x);
+                }
+            } else if (disconnect->game_type == 2) {
+                if(disconnect->RPSGame.fd_client_player_one == cfd) {
+                    handle_client_disconnect(disconnect->RPSGame.fd_client_player_two);
+                } else {
+                    handle_client_disconnect(disconnect->RPSGame.fd_client_player_one);
+                }
+            }
+        }
+    }
+}
 
 static int reset_data(data * old_data) {
 

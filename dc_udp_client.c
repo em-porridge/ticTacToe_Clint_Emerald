@@ -12,7 +12,7 @@
 int main(int argc, char *argv[])
 {
     const char *server_name = "localhost";
-    const int server_port = 65432;
+    const int server_port = 42069;
     const char* data_to_send = argv[1];
     struct sockaddr_in server_address;
     int sock;

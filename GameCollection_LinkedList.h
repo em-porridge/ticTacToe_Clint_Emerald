@@ -28,6 +28,7 @@ void reset_rps_lobby(node **head);
 void reset_ttt_lobby(node **head);
 
 node * return_link_by_uid(node ** head, uint32_t uid);
+node* return_link_by_cfd(node ** head, int fd);
 
 void delete_link(node **head, int32_t game_id);
 
@@ -39,6 +40,8 @@ void deinit(node **head);
 
 SingleRPSGameEnv * execute_rps_turn(node **head, int32_t game_id_to_find, int8_t requested);
 SingleTTTGameEnv * execute_ttt_turn(node **head, int32_t game_id_to_find, int8_t requested);
+
+
 
 
 //int find_remaining_by_id(rps_node **head, int cfd);
