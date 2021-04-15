@@ -266,8 +266,11 @@ static int send_accepted_move_code(Environment *env){
     byte_array_update[1] = game_env->FSM_data_reads.context;
     byte_array_update[2] = game_env->FSM_data_reads.payload_length;
 
-
+    printf("Sending accepted move to client. \n");
     send(game_env->fd_current_player, &byte_array_update, sizeof (byte_array_update), 0);
+    printf("SENT accepted move to client \n");
+
+    return 0;
 }
 
 

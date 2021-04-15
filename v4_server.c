@@ -309,7 +309,9 @@ static int handle_client_disconnect(int cfd) {
     byte_array[1] = context;
     byte_array[2] = payload_length;
 
+    printf("Sending handle disconnect \n");
     send(cfd, &byte_array, sizeof (byte_array), 0);
+    printf("Sent disconnect! \n");
     close(cfd);
     return 0;
 }
@@ -324,8 +326,9 @@ static int send_error_code(int cfd, int error_code) {
     byte_array[1] = context;
     byte_array[2] = payload_length;
 
+    printf("Sending error code\n");
     send(cfd, &byte_array, sizeof (byte_array), 0);
-
+    printf("Sent error code\n");
     return 0;
 }
 
@@ -346,8 +349,9 @@ static int send_new_game_code(int cfd, uint32_t uid) {
     byte_array[5] = (payload >> 8);
     byte_array[6] = (payload);
 
+    printf("Sending new game code \n");
     send(cfd, &byte_array, sizeof (byte_array), 0);
-
+    printf("SENT new game code\n");
     return 0;
 }
 
@@ -362,14 +366,19 @@ static int send_start_rps_game_code(int cfd_one, int cfd_two) {
     uint8_t context = UPDATE_START_GAME;
     uint8_t payload_length = 0;
 
-    unsigned char byte_array_play[4];
+    unsigned char byte_array_play[3];
 
     byte_array_play[0] = status;
     byte_array_play[1] = context;
     byte_array_play[2] = payload_length;
 
+    printf("Sending start game Client One \n");
     send(cfd_one, &byte_array_play, sizeof (byte_array_play), 0);
+    printf("SENT start game Client One \n");
+    printf("Sending start game Client Two  \n");
     send(cfd_two, &byte_array_play, sizeof (byte_array_play), 0);
+    printf("SENT start game Client Two \n");
+
     return 0;
 }
 

@@ -143,7 +143,7 @@ static int check_RPS_game_over(Environment *env) {
     return false;
 }
 
-int send_accept_play_code(Environment *env){
+static int send_accept_play_code(Environment *env){
     SingleRPSGameEnv *game_env;
     game_env = (SingleRPSGameEnv *) env;
 
@@ -179,7 +179,7 @@ static int send_RPS_decline_play_code(Environment *env){
     return 0;
 }
 
-int send_RPS_win_loss_game_codes(Environment *env) {
+static int send_RPS_win_loss_game_codes(Environment *env) {
     SingleRPSGameEnv *game_env;
     game_env = (SingleRPSGameEnv *) env;
 
