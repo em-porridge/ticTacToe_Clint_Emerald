@@ -48,8 +48,8 @@ static int validate_RPS_input(Environment *env){
     SingleRPSGameEnv *game_env;
     game_env = (SingleRPSGameEnv *) env;
 
-    if(!check_player_gone(env)) {
-        if(check_RPS_move_valid(env)){
+    if(check_RPS_move_valid(env)) {
+        if(!check_player_gone(env)){
             if(check_RPS_game_over(env)){
                 return RPS_GAMEOVER;
             } else {
@@ -93,6 +93,7 @@ static int check_player_gone(Environment *env){
     game_env = (SingleRPSGameEnv *) env;
     if(game_env->fd_current_client == game_env->fd_client_player_one) {
         if(game_env->client_one_play == 0){
+            game_env->client_one_play = game_env->move_received;
             return false;
         } else {
             // send error
@@ -110,7 +111,6 @@ static int check_player_gone(Environment *env){
     }
     return false;
 }
-
 
 static int check_RPS_move_valid(Environment *env){
     SingleRPSGameEnv *game_env;
@@ -205,16 +205,19 @@ static int send_RPS_win_loss_game_codes(Environment *env) {
     byte_array_update_loser[3] = game_env->FSM_data_reads.payload_second_byte;
     byte_array_update_loser[4] = game_env->FSM_data_reads.payload_third_byte;
 
-    if(game_env->client_one_play == game_env->winner) {
+    if(game_env->fd_client_player_one == game_env->winner) {
         // send win to x
+
         send_accept_play_code(env);
-        send(game_env->client_one_play, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
-        send(game_env->client_two_play, &byte_array_update_loser, sizeof (byte_array_update_winner), 0);
-    } else if(game_env->client_two_play == game_env->winner) {
+        printf("Sending Win \n");
+        send(game_env->fd_client_player_one , &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
+        send(game_env->fd_client_player_two, &byte_array_update_loser, sizeof (byte_array_update_winner), 0);
+    } else if(game_env->fd_client_player_two == game_env->winner) {
         // send win to o
+        printf("Sending Win \n");
         send_accept_play_code(env);
-        send(game_env->client_two_play, &byte_array_update_loser, sizeof (byte_array_update_loser), 0);
-        send(game_env->client_one_play, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
+        send(game_env->fd_client_player_one, &byte_array_update_loser, sizeof (byte_array_update_loser), 0);
+        send(game_env->fd_client_player_two, &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
     } else {
         // todo server error
     }
