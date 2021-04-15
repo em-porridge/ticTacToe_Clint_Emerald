@@ -190,8 +190,8 @@ static int send_RPS_win_loss_game_codes(Environment *env) {
     game_env->FSM_data_reads.payload_second_byte = PL_LOSS;
     game_env->FSM_data_reads.payload_third_byte = game_env->move_received;
 
-    unsigned char byte_array_update_winner[6];
-    unsigned char byte_array_update_loser[6];
+    unsigned char byte_array_update_winner[5];
+    unsigned char byte_array_update_loser[5];
 
     byte_array_update_winner[0] = game_env->FSM_data_reads.req_type;
     byte_array_update_winner[1] = game_env->FSM_data_reads.context;
