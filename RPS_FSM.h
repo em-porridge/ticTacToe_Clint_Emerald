@@ -33,6 +33,6 @@ static int check_RPS_winner(Environment *env);
 static int send_RPS_tie_game(Environment *env);
 static int send_RPS_win_loss_game_codes(Environment *env);
 static int send_accept_play_code(Environment *env);
-
+static int send_RPS_decline_play_code(Environment *env);
 
 #endif //A01_CLINT_EMERALD_RPS_FSM_H

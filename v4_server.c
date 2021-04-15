@@ -101,6 +101,7 @@ int main() {
                                     }
                                 } else {
                                     game_node->RPSGame.fd_current_client = cfd;
+
                                     game_node->RPSGame.move_received = received_data->payload_first_byte;
                                     mainzees(&game_node->RPSGame);
                                     // send to FSM
@@ -189,7 +190,7 @@ static int read_data(int cfd, data *client_data){
     if(recv(cfd, &byteArray, sizeof (byteArray), 0) == 0) {
         return -1;
     };
-    
+
     client_data->uid = htonl(*(uint32_t*)byteArray);
     client_data->req_type = byteArray[4];
     client_data->context = byteArray[5];

@@ -67,7 +67,7 @@ static int validate_RPS_input(Environment *env){
 static int invalid_RPS_move(Environment *env) {
     SingleRPSGameEnv *game_env;
     game_env = (SingleRPSGameEnv *) env;
-
+    send_RPS_decline_play_code(env);
 
 };
 
