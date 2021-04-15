@@ -266,6 +266,8 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
 
             newGameEnv.unique_game_id_player_one = lobby->RPSGame.unique_game_id_player_one;
             newGameEnv.unique_game_id_player_two = uid;
+            newGameEnv.client_one_play = 0;
+            newGameEnv.client_two_play = 0;
 
             insert_new_rps_game(&lobby, &newGameEnv);
             printf("Sending Invites...\n");

@@ -117,6 +117,7 @@ static int check_RPS_move_valid(Environment *env){
     game_env = (SingleRPSGameEnv *) env;
 
     if(game_env->move_received > 0 && game_env->move_received<= 3) {
+        send_accept_play_code(env);
         return true;
     } else {
         return false;
