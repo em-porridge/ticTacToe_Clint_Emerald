@@ -97,7 +97,6 @@ node *return_link_by_uid(node ** head, uint32_t uid){
     struct node * current = *head;
     struct node * tmp;
 
-    //todo update
     do {
         tmp = current;
         current = current->next;

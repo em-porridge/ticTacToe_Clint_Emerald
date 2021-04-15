@@ -191,7 +191,16 @@ static int read_data(int cfd, data *client_data){
         return -1;
     };
 
-    client_data->uid = htonl(*(uint32_t*)byteArray);
+//         read array
+//    client_data->uid = byteArray[0] << 24;
+//    client_data->uid |= byteArray[1] << 16;
+//    client_data->uid |= byteArray[2] << 8;
+//    client_data->uid |= byteArray[3];
+//
+    client_data->uid = byteArray[0];
+    client_data->uid |= byteArray[1] >> 8;
+    client_data->uid |= byteArray[2] >> 16;
+    client_data->uid |= byteArray[3] >> 24;
     client_data->req_type = byteArray[4];
     client_data->context = byteArray[5];
     client_data->payload_length = byteArray[6];
