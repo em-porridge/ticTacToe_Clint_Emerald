@@ -77,7 +77,7 @@ int main() {
 
                     if (num_read < 1) {
                         printf("++++++ Disconnect +++++ \n");
-                        client_disconnect(game_lobby, cfd);
+//                        client_disconnect(game_lobby, cfd);
                         close(cfd);
                         FD_CLR((u_int) cfd, &rfds);
 
@@ -108,8 +108,6 @@ int main() {
 
                                 }
                             }
-
-
                         }
                     }
                 }
@@ -424,12 +422,6 @@ static int client_disconnect(node *lobby, int cfd){
                     // delete node
                 } else {
                     handle_client_disconnect(disconnect->TTTGame.client_x);
-                }
-            } else if (disconnect->game_type == 2) {
-                if(disconnect->RPSGame.fd_client_player_one == cfd) {
-                    handle_client_disconnect(disconnect->RPSGame.fd_client_player_two);
-                } else {
-                    handle_client_disconnect(disconnect->RPSGame.fd_client_player_one);
                 }
             }
         }

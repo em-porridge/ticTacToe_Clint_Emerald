@@ -2,7 +2,7 @@
 // Created by emu on 2021-04-12.
 //
 
-// new hotness 
+// new hotness
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,9 +59,6 @@ static int validate_RPS_input(Environment *env){
             return RPS_WAIT;
         }
     }
-    // read
-    // check input
-
 }
 
 static int invalid_RPS_move(Environment *env) {
@@ -197,22 +194,27 @@ static int send_RPS_win_loss_game_codes(Environment *env) {
     byte_array_update_winner[1] = game_env->FSM_data_reads.context;
     byte_array_update_winner[2] = game_env->FSM_data_reads.payload_length;
     byte_array_update_winner[3] = game_env->FSM_data_reads.payload_first_byte;
-    byte_array_update_winner[4] = game_env->FSM_data_reads.payload_third_byte;
+
 
     byte_array_update_loser[0] = game_env->FSM_data_reads.req_type;
     byte_array_update_loser[1] = game_env->FSM_data_reads.context;
     byte_array_update_loser[2] = game_env->FSM_data_reads.payload_length;
     byte_array_update_loser[3] = game_env->FSM_data_reads.payload_second_byte;
-    byte_array_update_loser[4] = game_env->FSM_data_reads.payload_third_byte;
+
 
     if(game_env->fd_client_player_one == game_env->winner) {
         // send win to x
 
+        byte_array_update_winner[4] = game_env->client_two_play;
+        byte_array_update_loser[4] = game_env->client_one_play;
         send_accept_play_code(env);
         printf("Sending Win \n");
         send(game_env->fd_client_player_one , &byte_array_update_winner, sizeof (byte_array_update_winner), 0);
         send(game_env->fd_client_player_two, &byte_array_update_loser, sizeof (byte_array_update_winner), 0);
     } else if(game_env->fd_client_player_two == game_env->winner) {
+        byte_array_update_winner[4] = game_env->client_one_play;
+        byte_array_update_loser[4] = game_env->client_two_play;
+
         // send win to o
         printf("Sending Win \n");
         send_accept_play_code(env);
