@@ -232,7 +232,7 @@ static int send_RPS_tie_game(Environment *env){
     game_env->FSM_data_reads.payload_first_byte = PL_TIE;
     game_env->FSM_data_reads.payload_second_byte = game_env->move_received;
 
-    unsigned char byte_array_update[6];
+    unsigned char byte_array_update[5];
 
     byte_array_update[0] = game_env->FSM_data_reads.req_type;
     byte_array_update[1] = game_env->FSM_data_reads.context;
