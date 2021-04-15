@@ -189,18 +189,7 @@ static int read_data(int cfd, data *client_data){
     if(recv(cfd, &byteArray, sizeof (byteArray), 0) == 0) {
         return -1;
     };
-//     read array
-//    client_data->uid = byteArray[0] << 24;
-//    client_data->uid |= byteArray[1] << 16;
-//    client_data->uid |= byteArray[2] << 8;
-//    client_data->uid |= byteArray[3];
-//
-//    client_data->uid = byteArray[0];
-//    client_data->uid |= byteArray[1] >> 8;
-//    client_data->uid |= byteArray[2] >> 16;
-//    client_data->uid |= byteArray[3] >> 24;
-
-
+    
     client_data->uid = htonl(*(uint32_t*)byteArray);
     client_data->req_type = byteArray[4];
     client_data->context = byteArray[5];
@@ -269,8 +258,10 @@ static int handle_new_connection(node *lobby, int cfd, uint32_t uid, uint8_t gam
             newGameEnv.unique_game_id_player_two = uid;
 
             insert_new_rps_game(&lobby, &newGameEnv);
-            send_start_rps_game_code(newGameEnv.fd_client_player_one, newGameEnv.fd_client_player_one);
+            printf("Sending Invites...\n");
+            send_start_rps_game_code(newGameEnv.fd_client_player_one, newGameEnv.fd_client_player_two);
             reset_rps_lobby(&lobby);
+            printf("SENT! \n");
 
             return 0;
         } else if(lobby->RPSGame.fd_client_player_one == 0) {
