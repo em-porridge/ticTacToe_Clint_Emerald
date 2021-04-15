@@ -75,7 +75,7 @@ static int accepted_RPS_move(Environment *env) {
     SingleRPSGameEnv *game_env;
     game_env = (SingleRPSGameEnv *) env;
     send_accept_play_code(env);
-    return 0;
+    return FSM_EXIT;
 };
 
 static int game_RPS_over(Environment *env) {
@@ -93,17 +93,17 @@ static int check_player_gone(Environment *env){
     game_env = (SingleRPSGameEnv *) env;
     if(game_env->fd_current_client == game_env->fd_client_player_one) {
         if(game_env->client_one_play == 0){
-            return true;
+            return false;
         } else {
             // send error
-            return false;
+            return true;
         }
     } else if (game_env -> fd_current_client == game_env ->fd_client_player_two) {
         if(game_env->client_two_play == 0) {
             game_env->client_two_play = game_env->move_received;
-            return  true;
+            return  false;
         } else {
-            return false;
+            return true;
         }
     } else {
         // error
@@ -115,9 +115,7 @@ static int check_player_gone(Environment *env){
 static int check_RPS_move_valid(Environment *env){
     SingleRPSGameEnv *game_env;
     game_env = (SingleRPSGameEnv *) env;
-
-    if(game_env->move_received > 0 && game_env->move_received<= 3) {
-        send_accept_play_code(env);
+    if(game_env->move_received > 0 && game_env->move_received <= 3) {
         return true;
     } else {
         return false;
@@ -130,6 +128,7 @@ static int check_RPS_game_over(Environment *env) {
 
     if(game_env->client_two_play > 0 && game_env->client_one_play > 0 ) {
         int winner = ((3 + (game_env->client_one_play)-(game_env->client_two_play)) % 3);
+
         if(winner == 0) {
             send_RPS_tie_game(env);
         } else if(winner == 1) {
