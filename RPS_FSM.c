@@ -128,7 +128,7 @@ static int check_RPS_game_over(Environment *env) {
     game_env = (SingleRPSGameEnv *) env;
 
     if(game_env->client_two_play > 0 && game_env->client_one_play > 0 ) {
-        int winner = (3 + (game_env->client_one_play)-(game_env->client_two_play));
+        int winner = ((3 + (game_env->client_one_play)-(game_env->client_two_play)) % 3);
         if(winner == 0) {
             send_RPS_tie_game(env);
         } else if(winner == 1) {
@@ -138,7 +138,6 @@ static int check_RPS_game_over(Environment *env) {
             game_env->winner = game_env->fd_client_player_two;
             send_RPS_win_loss_game_codes(env);
         }
-        // send winner codes
         return true;
     }
     return false;
