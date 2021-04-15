@@ -84,7 +84,7 @@ static int game_RPS_over(Environment *env) {
 
 static int RPS_terminate(Environment *env) {
     printf("Terminating...");
-    return FSM_EXIT;
+    exit(EXIT_FAILURE);
 };
 
 
